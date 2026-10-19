@@ -1,0 +1,5 @@
+streamlit
+torch
+Pillow
+transformers
+qrcode[pil]

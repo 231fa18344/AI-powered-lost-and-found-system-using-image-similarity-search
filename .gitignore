@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+findit.db
+item_images/
+.env
+.streamlit/secrets.toml
