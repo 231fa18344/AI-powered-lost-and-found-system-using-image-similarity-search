@@ -29,6 +29,11 @@ st.set_page_config(
 # --------------------------------------------------
 
 os.makedirs("item_images", exist_ok=True)
+# Connect to Supabase
+supabase = create_client(
+    st.secrets["SUPABASE_URL"],
+    st.secrets["SUPABASE_KEY"]
+)
 
 connection = sqlite3.connect("findit.db")
 cursor = connection.cursor()
