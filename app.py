@@ -7,6 +7,8 @@ import streamlit as st
 import torch
 from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
+import qrcode
+from io import BytesIO
 
 
 # --------------------------------------------------
@@ -130,6 +132,28 @@ def find_similar_items(query_image, image_items):
 # --------------------------------------------------
 
 st.title("🔎 FindIt AI")
+st.header("📱 Share FindIt AI")
+
+website_url = "https://ai-powered-lost-and-found-system-using-image-similarity-search.streamlit.app/"
+
+qr = qrcode.QRCode(box_size=10, border=4)
+qr.add_data(website_url)
+qr.make(fit=True)
+
+qr_image = qr.make_image(fill_color="black", back_color="white")
+
+qr_buffer = BytesIO()
+qr_image.save(qr_buffer, format="PNG")
+qr_bytes = qr_buffer.getvalue()
+
+st.image(qr_bytes, caption="Scan to open FindIt AI", width=250)
+
+st.download_button(
+    label="⬇️ Download QR Code",
+    data=qr_bytes,
+    file_name="FindItAI_QR_Code.png",
+    mime="image/png"
+)
 st.subheader("Intelligent Lost-and-Found System")
 
 st.write(
@@ -403,8 +427,6 @@ if search_term.strip():
 
 
 st.divider()
-
-
 # --------------------------------------------------
 # 9. Display All Found Items
 # --------------------------------------------------
