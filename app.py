@@ -175,7 +175,15 @@ with st.form("report_item_form"):
         "Upload a photo of the found item",
         type=["jpg", "jpeg", "png"],
         key="report_image"
+    )   
+    camera_image = st.camera_input(
+        "Or take a photo using your camera",
+        key="report_camera"
     )
+
+    if camera_image is not None:
+        uploaded_image = camera_image
+    
 
     item_name = st.text_input(
         "What item did you find?"
@@ -272,8 +280,16 @@ ai_search_image = st.file_uploader(
     key="ai_search_image"
 )
 
+camera_search_image = st.camera_input(
+    "Or take a photo to search for similar items",
+    key="camera_search_image"
+)
+
+if camera_search_image is not None:
+    ai_search_image = camera_search_image
 
 if ai_search_image is not None:
+   
 
     try:
         query_image = Image.open(
