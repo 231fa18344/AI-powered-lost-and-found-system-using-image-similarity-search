@@ -3,3 +3,4 @@ torch
 Pillow
 transformers
 qrcode[pil]
+supabase
