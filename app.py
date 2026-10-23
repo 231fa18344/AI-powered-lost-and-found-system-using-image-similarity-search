@@ -9,6 +9,8 @@ from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
 import qrcode
 from io import BytesIO
+import streamlit as st
+from supabase import create_client
 
 
 # --------------------------------------------------
