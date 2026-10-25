@@ -496,6 +496,7 @@ else:
 
     st.info("No found items have been saved yet.")
 
+
 # --------------------------------------------------
 # 10. Safe Item Recovery Request
 # --------------------------------------------------
@@ -503,6 +504,7 @@ else:
 st.header("🤝 Request Item Recovery")
 
 try:
+    # Load found items from Supabase
     response = (
         supabase.table("found_items")
         .select("id, item_name, description, location")
@@ -514,14 +516,24 @@ try:
 
     if recovery_items:
 
+        # Create item choices
         item_options = {
-            f"{item['item_name']} - {item.get('location') or 'Location not specified'} (ID: {item['id']})": item["id"]
+            (
+                f"{item.get('item_name', 'Unknown item')} - "
+                f"{item.get('location') or 'Location not specified'} "
+                f"(ID: {item['id']})"
+            ): item["id"]
             for item in recovery_items
         }
 
         selected_item = st.selectbox(
             "Select the item you want to recover",
-            options=list(item_options.keys())
+            options=list(item_options.keys()),
+            key="recovery_item_select"
+        )
+
+        st.write(
+            "Fill in your details to request recovery of this item."
         )
 
         with st.form("recovery_request_form"):
@@ -538,13 +550,16 @@ try:
 
             message = st.text_area(
                 "Explain why you think this item belongs to you",
-                max_chars=1000
+                max_chars=1000,
+                placeholder=(
+                    "Example: I lost my wallet near the classroom. "
+                    "I can describe its contents to verify ownership."
+                )
             )
 
             st.caption(
-                "Your contact details are stored privately in the "
-                "recovery request table and are not shown in the "
-                "public found-item list."
+                "Your contact details are submitted with your request. "
+                "Do not include passwords, OTPs, or sensitive ID numbers."
             )
 
             submitted = st.form_submit_button(
@@ -563,24 +578,44 @@ try:
                 st.warning("Please explain your recovery request.")
 
             else:
+                try:
+                    # Save the request in Supabase
+                    supabase.table("recovery_requests").insert({
+                        "item_id": item_options[selected_item],
+                        "requester_name": requester_name.strip(),
+                        "requester_contact": requester_contact.strip(),
+                        "message": message.strip()
+                    }).execute()
 
-                supabase.table("recovery_requests").insert({
-                    "item_id": item_options[selected_item],
-                    "requester_name": requester_name.strip(),
-                    "requester_contact": requester_contact.strip(),
-                    "message": message.strip()
-                }).execute()
+                    st.success(
+                        "Recovery request submitted successfully!"
+                    )
 
-                st.success(
-                    "Recovery request submitted successfully!"
-                )
+                    st.info(
+                        "Your request has been saved. "
+                        "The finder has not been automatically notified."
+                    )
+
+                except Exception as submit_error:
+                    st.error(
+                        "Unable to submit recovery request. "
+                        "Please check the database permissions."
+                    )
+                    st.code(str(submit_error))
 
     else:
-        st.info("No found items are available to request.")
+        st.info(
+            "No found items are available to request."
+        )
 
 except Exception as error:
-    st.error(f"Unable to load recovery form: {error}")
+    st.error(
+        "Unable to load the recovery form. "
+        "Please check your Supabase connection and permissions."
+    )
+    st.code(str(error))
 
+st.divider()
 # --------------------------------------------------
 # 11. Close Database Connection
 # --------------------------------------------------
