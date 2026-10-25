@@ -497,7 +497,92 @@ else:
     st.info("No found items have been saved yet.")
 
 # --------------------------------------------------
-# 10. Close Database Connection
+# 10. Safe Item Recovery Request
+# --------------------------------------------------
+
+st.header("🤝 Request Item Recovery")
+
+try:
+    response = (
+        supabase.table("found_items")
+        .select("id, item_name, description, location")
+        .order("id", desc=True)
+        .execute()
+    )
+
+    recovery_items = response.data
+
+    if recovery_items:
+
+        item_options = {
+            f"{item['item_name']} - {item.get('location') or 'Location not specified'} (ID: {item['id']})": item["id"]
+            for item in recovery_items
+        }
+
+        selected_item = st.selectbox(
+            "Select the item you want to recover",
+            options=list(item_options.keys())
+        )
+
+        with st.form("recovery_request_form"):
+
+            requester_name = st.text_input(
+                "Your name",
+                max_chars=100
+            )
+
+            requester_contact = st.text_input(
+                "Your contact (email or phone)",
+                max_chars=200
+            )
+
+            message = st.text_area(
+                "Explain why you think this item belongs to you",
+                max_chars=1000
+            )
+
+            st.caption(
+                "Your contact details are stored privately in the "
+                "recovery request table and are not shown in the "
+                "public found-item list."
+            )
+
+            submitted = st.form_submit_button(
+                "Submit Recovery Request"
+            )
+
+        if submitted:
+
+            if not requester_name.strip():
+                st.warning("Please enter your name.")
+
+            elif not requester_contact.strip():
+                st.warning("Please enter your contact details.")
+
+            elif not message.strip():
+                st.warning("Please explain your recovery request.")
+
+            else:
+
+                supabase.table("recovery_requests").insert({
+                    "item_id": item_options[selected_item],
+                    "requester_name": requester_name.strip(),
+                    "requester_contact": requester_contact.strip(),
+                    "message": message.strip()
+                }).execute()
+
+                st.success(
+                    "Recovery request submitted successfully!"
+                )
+
+    else:
+        st.info("No found items are available to request.")
+
+except Exception as error:
+    st.error(f"Unable to load recovery form: {error}")
+
+# --------------------------------------------------
+# 11. Close Database Connection
 # --------------------------------------------------
 
 connection.close()
