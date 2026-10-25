@@ -298,7 +298,6 @@ if camera_search_image is not None:
     ai_search_image = camera_search_image
 
 if ai_search_image is not None:
-   
 
     try:
         query_image = Image.open(
@@ -308,31 +307,40 @@ if ai_search_image is not None:
         st.write("**Your uploaded search image:**")
         st.image(query_image, width=220)
 
-        cursor.execute("""
-            SELECT id, item_name, description, location, image_path
-            FROM found_items
-            WHERE image_path IS NOT NULL
-            ORDER BY id DESC
-        """)
+        response = (
+            supabase.table("found_items")
+            .select("*")
+            .not_.is_("image_path", "null")
+            .order("id", desc=True)
+            .execute()
+        )
 
-        database_items = cursor.fetchall()
-
+        database_items = response.data
         image_items = []
+
+        import requests
+        from io import BytesIO
 
         for item in database_items:
 
-            saved_path = item[4]
+            saved_url = item.get("image_path")
 
-            if saved_path and os.path.exists(saved_path):
+            if saved_url and saved_url.startswith("https://"):
 
                 try:
-                    with Image.open(saved_path) as saved_image:
-                        image_items.append(
-                            (
-                                item,
-                                saved_image.convert("RGB")
-                            )
-                        )
+                    image_response = requests.get(
+                        saved_url,
+                        timeout=15
+                    )
+                    image_response.raise_for_status()
+
+                    saved_image = Image.open(
+                        BytesIO(image_response.content)
+                    ).convert("RGB")
+
+                    image_items.append(
+                        (item, saved_image)
+                    )
 
                 except Exception:
                     continue
@@ -340,15 +348,13 @@ if ai_search_image is not None:
         if not image_items:
 
             st.info(
-                "No items with readable photos found yet. "
+                "No readable photos found in Supabase Storage. "
                 "Please report a found item with a photo first."
             )
 
         else:
 
-            with st.spinner(
-                "AI is comparing the images..."
-            ):
+            with st.spinner("AI is comparing the images..."):
 
                 ranked = find_similar_items(
                     query_image,
@@ -361,39 +367,22 @@ if ai_search_image is not None:
 
                 with st.container(border=True):
 
-                    col1, col2 = st.columns(
-                        [1, 2]
-                    )
+                    col1, col2 = st.columns([1, 2])
 
                     with col1:
-                        st.image(
-                            saved_image,
-                            width=220
-                        )
+                        st.image(saved_image, width=220)
 
                     with col2:
-                        st.write(
-                            f"**Item:** {item[1]}"
-                        )
-
-                        st.write(
-                            f"**Description:** {item[2]}"
-                        )
-
-                        st.write(
-                            f"**Location:** {item[3]}"
-                        )
-
+                        st.write(f"**Item:** {item.get('item_name', '')}")
+                        st.write(f"**Description:** {item.get('description', '')}")
+                        st.write(f"**Location:** {item.get('location', '')}")
                         st.write(
                             f"**Image similarity score:** "
                             f"{score * 100:.2f}%"
                         )
 
     except Exception as error:
-        st.error(
-            f"Unable to process the image: {error}"
-        )
-
+        st.error(f"Unable to process the image: {error}")
 
 st.divider()
 
