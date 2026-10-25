@@ -222,35 +222,40 @@ if submit_item:
 
         if uploaded_image is not None:
 
-    extension = os.path.splitext(
-        uploaded_image.name
-    )[1].lower()
+            extension = os.path.splitext(
+                uploaded_image.name
+            )[1].lower()
 
-    image_filename = (
-        f"{uuid.uuid4().hex}{extension}"
-    )
+            image_filename = (
+                f"{uuid.uuid4().hex}{extension}"
+            )
 
-    image_bytes = uploaded_image.getvalue()
+            image_bytes = uploaded_image.getvalue()
 
-    supabase.storage.from_("item-images").upload(
-        path=image_filename,
-        file=image_bytes,
-        file_options={
-            "content-type": uploaded_image.type,
-            "upsert": "false"
-        }
-    )
+            supabase.storage.from_("item-images").upload(
+                path=image_filename,
+                file=image_bytes,
+                file_options={
+                    "content-type": uploaded_image.type,
+                    "upsert": "false"
+                }
+            )
 
-    image_path = supabase.storage.from_("item-images").get_public_url(
-        image_filename
-    )
+            image_path = supabase.storage.from_("item-images").get_public_url(
+                image_filename
+            )
 
         supabase.table("found_items").insert({
-    "item_name": item_name.strip(),
-    "description": description.strip(),
-    "location": location.strip(),
-    "image_path": image_path
-}).execute()
+            "item_name": item_name.strip(),
+            "description": description.strip(),
+            "location": location.strip(),
+            "image_path": image_path
+        }).execute()
+
+        st.success("Found item submitted successfully!")
+
+    else:
+        st.error("Please fill in all required fields.")
         
 # Create a table to store item claims
 cursor.execute("""
