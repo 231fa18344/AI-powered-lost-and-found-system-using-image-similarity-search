@@ -479,14 +479,14 @@ if all_items:
 
             col1, col2 = st.columns([1, 2])
 
-            with col1:
+                       with col1:
 
                 image_path = item.get("image_path")
 
                 if image_path:
-    st.image(image_path, width=220)
-else:
-    st.caption("No photo available")
+                    st.image(image_path, width=220)
+                else:
+                    st.caption("No photo available")
 
             with col2:
 
