@@ -222,23 +222,28 @@ if submit_item:
 
         if uploaded_image is not None:
 
-            extension = os.path.splitext(
-                uploaded_image.name
-            )[1].lower()
+    extension = os.path.splitext(
+        uploaded_image.name
+    )[1].lower()
 
-            image_filename = (
-                f"{uuid.uuid4().hex}{extension}"
-            )
+    image_filename = (
+        f"{uuid.uuid4().hex}{extension}"
+    )
 
-            image_path = os.path.join(
-                "item_images",
-                image_filename
-            )
+    image_bytes = uploaded_image.getvalue()
 
-            with open(image_path, "wb") as image_file:
-                image_file.write(
-                    uploaded_image.getvalue()
-                )
+    supabase.storage.from_("item-images").upload(
+        path=image_filename,
+        file=image_bytes,
+        file_options={
+            "content-type": uploaded_image.type,
+            "upsert": "false"
+        }
+    )
+
+    image_path = supabase.storage.from_("item-images").get_public_url(
+        image_filename
+    )
 
         supabase.table("found_items").insert({
     "item_name": item_name.strip(),
