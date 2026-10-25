@@ -448,13 +448,14 @@ st.divider()
 
 st.header("📋 All Found Items")
 
-cursor.execute("""
-    SELECT id, item_name, description, location, image_path
-    FROM found_items
-    ORDER BY id DESC
-""")
+response = (
+    supabase.table("found_items")
+    .select("*")
+    .order("id", desc=True)
+    .execute()
+)
 
-all_items = cursor.fetchall()
+all_items = response.data
 
 if all_items:
 
@@ -466,44 +467,29 @@ if all_items:
 
         with st.container(border=True):
 
-            col1, col2 = st.columns(
-                [1, 2]
-            )
+            col1, col2 = st.columns([1, 2])
 
             with col1:
 
+                image_path = item.get("image_path")
+
                 if (
-                    item[4]
-                    and os.path.exists(item[4])
+                    image_path
+                    and os.path.exists(image_path)
                 ):
-                    st.image(
-                        item[4],
-                        width=220
-                    )
+                    st.image(image_path, width=220)
                 else:
-                    st.caption(
-                        "No photo available"
-                    )
+                    st.caption("No photo available")
 
             with col2:
 
-                st.write(
-                    f"**Item:** {item[1]}"
-                )
-
-                st.write(
-                    f"**Description:** {item[2]}"
-                )
-
-                st.write(
-                    f"**Location:** {item[3]}"
-                )
+                st.write(f"**Item:** {item.get('item_name', '')}")
+                st.write(f"**Description:** {item.get('description', '')}")
+                st.write(f"**Location:** {item.get('location', '')}")
 
 else:
 
-    st.info(
-        "No found items have been saved yet."
-    )
+    st.info("No found items have been saved yet.")
 
 
 # --------------------------------------------------
