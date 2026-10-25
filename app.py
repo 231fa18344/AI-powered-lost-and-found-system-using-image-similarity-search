@@ -497,6 +497,7 @@ else:
     st.info("No found items have been saved yet.")
 
 
+
 # --------------------------------------------------
 # 10. Safe Item Recovery Request
 # --------------------------------------------------
@@ -512,14 +513,16 @@ try:
         .execute()
     )
 
-    recovery_items = response.data
+    recovery_items = response.data or []
 
-    if recovery_items:
+    if not recovery_items:
+        st.info("No found items are available to request.")
 
-        # Create item choices
+    else:
+        # Prepare item choices
         item_options = {
             (
-                f"{item.get('item_name', 'Unknown item')} - "
+                f"{item.get('item_name') or 'Unknown item'} - "
                 f"{item.get('location') or 'Location not specified'} "
                 f"(ID: {item['id']})"
             ): item["id"]
@@ -533,7 +536,7 @@ try:
         )
 
         st.write(
-            "Fill in your details to request recovery of this item."
+            "Enter your details to request recovery of this item."
         )
 
         with st.form("recovery_request_form"):
@@ -558,7 +561,6 @@ try:
             )
 
             st.caption(
-                "Your contact details are submitted with your request. "
                 "Do not include passwords, OTPs, or sensitive ID numbers."
             )
 
@@ -579,13 +581,16 @@ try:
 
             else:
                 try:
-                    # Save the request in Supabase
-                    supabase.table("recovery_requests").insert({
-                        "item_id": item_options[selected_item],
-                        "requester_name": requester_name.strip(),
-                        "requester_contact": requester_contact.strip(),
-                        "message": message.strip()
-                    }).execute()
+                    # Submit request without returning row data
+                    supabase.table("recovery_requests").insert(
+                        {
+                            "item_id": item_options[selected_item],
+                            "requester_name": requester_name.strip(),
+                            "requester_contact": requester_contact.strip(),
+                            "message": message.strip()
+                        },
+                        returning="minimal"
+                    ).execute()
 
                     st.success(
                         "Recovery request submitted successfully!"
@@ -597,22 +602,11 @@ try:
                     )
 
                 except Exception as submit_error:
-                    st.error(
-                        "Unable to submit recovery request. "
-                        "Please check the database permissions."
-                    )
+                    st.error("Unable to submit recovery request.")
                     st.code(str(submit_error))
 
-    else:
-        st.info(
-            "No found items are available to request."
-        )
-
 except Exception as error:
-    st.error(
-        "Unable to load the recovery form. "
-        "Please check your Supabase connection and permissions."
-    )
+    st.error("Unable to load the recovery form.")
     st.code(str(error))
 
 st.divider()
