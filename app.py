@@ -473,13 +473,14 @@ if all_items:
         f"Total found items reported: {len(all_items)}"
     )
 
-        for item in all_items:
+    for item in all_items:
 
         with st.container(border=True):
 
             col1, col2 = st.columns([1, 2])
 
             with col1:
+
                 image_path = item.get("image_path")
 
                 if image_path:
@@ -488,6 +489,7 @@ if all_items:
                     st.caption("No photo available")
 
             with col2:
+
                 st.write(f"**Item:** {item.get('item_name', '')}")
                 st.write(f"**Description:** {item.get('description', '')}")
                 st.write(f"**Location:** {item.get('location', '')}")
@@ -495,7 +497,6 @@ if all_items:
 else:
 
     st.info("No found items have been saved yet.")
-
 
 # --------------------------------------------------
 # 10. Close Database Connection
