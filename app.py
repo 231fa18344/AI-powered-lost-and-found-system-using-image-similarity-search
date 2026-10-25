@@ -29,6 +29,7 @@ st.set_page_config(
 # --------------------------------------------------
 
 os.makedirs("item_images", exist_ok=True)
+
 # Connect to Supabase
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
@@ -239,21 +240,12 @@ if submit_item:
                     uploaded_image.getvalue()
                 )
 
-        cursor.execute(
-            """
-            INSERT INTO found_items
-            (item_name, description, location, image_path)
-            VALUES (?, ?, ?, ?)
-            """,
-            (
-                item_name.strip(),
-                description.strip(),
-                location.strip(),
-                image_path
-            )
-        )
-
-        connection.commit()
+        supabase.table("found_items").insert({
+    "item_name": item_name.strip(),
+    "description": description.strip(),
+    "location": location.strip(),
+    "image_path": image_path
+}).execute()
         
 # Create a table to store item claims
 cursor.execute("""
