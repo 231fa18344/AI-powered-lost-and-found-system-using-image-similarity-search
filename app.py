@@ -483,13 +483,10 @@ if all_items:
 
                 image_path = item.get("image_path")
 
-                if (
-                    image_path
-                    and os.path.exists(image_path)
-                ):
-                    st.image(image_path, width=220)
-                else:
-                    st.caption("No photo available")
+                if image_path:
+    st.image(image_path, width=220)
+else:
+    st.caption("No photo available")
 
             with col2:
 
