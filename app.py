@@ -239,8 +239,34 @@ def find_similar_items(query_image, image_items):
     return ranked_items
 
 
+
 # --------------------------------------------------
-# 5. HOME AND SHARE PAGES
+# 5. TOP NAVIGATION AND WEBSITE PAGES
+# --------------------------------------------------
+
+# TOP HORIZONTAL NAVIGATION
+
+selected_page = st.radio(
+    "Navigation",
+    [
+        "🏠 Home",
+        "📦 Report Item",
+        "🔍 Search Items",
+        "🤖 AI Image Search",
+        "📩 Recovery Requests",
+        "📤 Share",
+        "🔐 Admin"
+    ],
+    horizontal=True,
+    label_visibility="collapsed",
+    key="main_navigation"
+)
+
+st.divider()
+
+
+# --------------------------------------------------
+# HOME PAGE
 # --------------------------------------------------
 
 if selected_page == "🏠 Home":
@@ -254,10 +280,30 @@ if selected_page == "🏠 Home":
     )
 
     st.info(
-        "FindIt AI helps students find lost items using "
-        "AI-powered image similarity and text search."
+        "FindIt AI helps students find lost items "
+        "using AI-powered image similarity and text search."
     )
 
+    st.subheader("✨ Main Features")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown("### 📦 Report Items")
+        st.write("Report items that you have found.")
+
+    with col2:
+        st.markdown("### 🤖 AI Image Search")
+        st.write("Find similar items using an image.")
+
+    with col3:
+        st.markdown("### 🔍 Text Search")
+        st.write("Search using item name or description.")
+
+
+# --------------------------------------------------
+# SHARE PAGE
+# --------------------------------------------------
 
 elif selected_page == "📤 Share":
 
@@ -265,9 +311,12 @@ elif selected_page == "📤 Share":
 
     st.header("📱 Share FindIt AI")
 
-    website_url = "https://ai-powered-lost-and-found-system-using-image-similarity-search.streamlit.app/"
+    website_url = (
+        "https://ai-powered-lost-and-found-system-using-image-similarity-search.streamlit.app/"
+    )
 
     qr = qrcode.QRCode(box_size=10, border=4)
+
     qr.add_data(website_url)
     qr.make(fit=True)
 
@@ -277,7 +326,9 @@ elif selected_page == "📤 Share":
     )
 
     qr_buffer = BytesIO()
+
     qr_image.save(qr_buffer, format="PNG")
+
     qr_bytes = qr_buffer.getvalue()
 
     st.image(
