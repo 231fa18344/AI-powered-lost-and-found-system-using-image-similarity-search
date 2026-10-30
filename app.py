@@ -640,6 +640,7 @@ st.divider()
 
 
 
+
 # --------------------------------------------------
 # 11. Admin Login and Recovery Requests Dashboard
 # --------------------------------------------------
@@ -731,6 +732,7 @@ else:
         st.subheader("📋 Recovery Requests Dashboard")
 
         try:
+
             requests_response = (
                 admin_supabase.table("recovery_requests")
                 .select(
@@ -743,6 +745,47 @@ else:
             )
 
             recovery_requests = requests_response.data or []
+
+            # --------------------------------------------------
+            # Recovery Request Statistics
+            # --------------------------------------------------
+
+            st.subheader("📊 Recovery Request Statistics")
+
+            total_requests = len(recovery_requests)
+
+            pending_count = sum(
+                1 for r in recovery_requests
+                if r.get("status") == "Pending"
+            )
+
+            contacted_count = sum(
+                1 for r in recovery_requests
+                if r.get("status") == "Contacted"
+            )
+
+            returned_count = sum(
+                1 for r in recovery_requests
+                if r.get("status") == "Returned"
+            )
+
+            rejected_count = sum(
+                1 for r in recovery_requests
+                if r.get("status") == "Rejected"
+            )
+
+            col1, col2, col3 = st.columns(3)
+
+            col1.metric("📋 Total Requests", total_requests)
+            col2.metric("⏳ Pending", pending_count)
+            col3.metric("📞 Contacted", contacted_count)
+
+            col4, col5 = st.columns(2)
+
+            col4.metric("✅ Returned", returned_count)
+            col5.metric("❌ Rejected", rejected_count)
+
+            st.divider()
 
             # --------------------------------------------------
             # Search and Filter Options
@@ -868,6 +911,7 @@ else:
                         ):
 
                             try:
+
                                 (
                                     admin_supabase
                                     .table("recovery_requests")
