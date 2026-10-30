@@ -744,6 +744,37 @@ else:
             )
 
             recovery_requests = requests_response.data or []
+            # Search and Filter Options
+st.subheader("🔎 Search and Filter Requests")
+
+search_text = st.text_input(
+    "Search by requester name or item name"
+)
+
+status_filter = st.selectbox(
+    "Filter by Status",
+    ["All", "Pending", "Contacted", "Returned", "Rejected"]
+)
+
+filtered_requests = []
+
+for request in recovery_requests:
+
+    item_details = request.get("found_items") or {}
+    item_name = item_details.get("item_name", "Unknown item")
+
+    matches_search = (
+        search_text.lower() in request["requester_name"].lower()
+        or search_text.lower() in item_name.lower()
+    )
+
+    matches_status = (
+        status_filter == "All"
+        or request["status"] == status_filter
+    )
+
+    if matches_search and matches_status:
+        filtered_requests.append(request)
 
             if recovery_requests:
 
