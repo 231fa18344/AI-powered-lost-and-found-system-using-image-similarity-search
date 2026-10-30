@@ -25,6 +25,80 @@ st.set_page_config(
     page_icon="🔎",
     layout="wide"
 )
+# --------------------------------------------------
+# PREMIUM DARK BLUE UI DESIGN
+# --------------------------------------------------
+
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(135deg, #071426 0%, #0b1d35 55%, #102747 100%);
+    color: #f1f5f9;
+}
+
+header[data-testid="stHeader"] {
+    background: transparent;
+}
+
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 3rem;
+    max-width: 1400px;
+}
+
+h1, h2, h3 {
+    color: #f8fafc !important;
+    font-weight: 700 !important;
+}
+
+p, label, .stMarkdown {
+    color: #dbeafe;
+}
+
+div[data-testid="stMetric"] {
+    background: #112944;
+    border: 1px solid #245080;
+    padding: 20px;
+    border-radius: 14px;
+}
+
+.stButton > button {
+    background: linear-gradient(90deg, #1677ff, #2563eb);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-weight: 600;
+}
+
+.stButton > button:hover {
+    background: #3b82f6;
+    color: white;
+    border: 1px solid #60a5fa;
+}
+
+input, textarea {
+    background-color: #102944 !important;
+    color: white !important;
+    border-radius: 8px !important;
+}
+
+div[data-testid="stFileUploader"] {
+    background: #102944;
+    border: 1px dashed #3b82f6;
+    border-radius: 12px;
+    padding: 15px;
+}
+
+section[data-testid="stSidebar"] {
+    background: #08182b;
+}
+
+hr {
+    border-color: #244568;
+}
+</style>
+""", unsafe_allow_html=True)
 
 
 
