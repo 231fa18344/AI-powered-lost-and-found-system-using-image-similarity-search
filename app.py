@@ -242,6 +242,48 @@ def find_similar_items(query_image, image_items):
 # --------------------------------------------------
 # 5. Website Heading
 # --------------------------------------------------
+# --------------------------------------------------
+# TOP HORIZONTAL NAVIGATION
+# --------------------------------------------------
+
+st.markdown("""
+<style>
+div[role="radiogroup"] {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 12px;
+    background: #102944;
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid #245080;
+}
+
+div[role="radiogroup"] label {
+    background: #173B63;
+    padding: 10px 16px;
+    border-radius: 9px;
+    color: white !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+selected_page = st.radio(
+    "Navigation",
+    [
+        "🏠 Home",
+        "📦 Report Item",
+        "🔍 Search Items",
+        "🤖 AI Image Search",
+        "📩 Recovery Requests",
+        "📤 Share",
+        "🔐 Admin"
+    ],
+    horizontal=True,
+    label_visibility="collapsed"
+)
+
+st.divider()
 
 st.title("🔎 FindIt AI")
 st.header("📱 Share FindIt AI")
