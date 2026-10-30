@@ -639,6 +639,7 @@ except Exception as error:
 st.divider()
 
 
+
 # --------------------------------------------------
 # 11. Admin Login and Recovery Requests Dashboard
 # --------------------------------------------------
@@ -671,7 +672,6 @@ if not st.session_state.admin_logged_in:
 
         else:
             try:
-                # Create a separate client for admin login
                 login_client = create_client(
                     st.secrets["SUPABASE_URL"],
                     st.secrets["SUPABASE_KEY"]
@@ -691,7 +691,6 @@ if not st.session_state.admin_logged_in:
                     and admin_session
                 ):
 
-                    # Save tokens for future Streamlit reruns
                     st.session_state.admin_access_token = (
                         admin_session.access_token
                     )
@@ -718,6 +717,7 @@ else:
     st.success("Admin logged in successfully!")
 
     if admin_supabase is None:
+
         st.error("Admin session expired. Please login again.")
 
         st.session_state.admin_logged_in = False
@@ -728,7 +728,6 @@ else:
 
     else:
 
-        # Admin Recovery Requests Dashboard
         st.subheader("📋 Recovery Requests Dashboard")
 
         try:
@@ -744,43 +743,61 @@ else:
             )
 
             recovery_requests = requests_response.data or []
+
+            # --------------------------------------------------
             # Search and Filter Options
-st.subheader("🔎 Search and Filter Requests")
+            # --------------------------------------------------
 
-search_text = st.text_input(
-    "Search by requester name or item name"
-)
+            st.subheader("🔎 Search and Filter Requests")
 
-status_filter = st.selectbox(
-    "Filter by Status",
-    ["All", "Pending", "Contacted", "Returned", "Rejected"]
-)
+            search_text = st.text_input(
+                "Search by requester name or item name"
+            )
 
-filtered_requests = []
+            status_filter = st.selectbox(
+                "Filter by Status",
+                ["All", "Pending", "Contacted", "Returned", "Rejected"]
+            )
 
-for request in recovery_requests:
+            filtered_requests = []
 
-    item_details = request.get("found_items") or {}
-    item_name = item_details.get("item_name", "Unknown item")
+            for request in recovery_requests:
 
-    matches_search = (
-        search_text.lower() in request["requester_name"].lower()
-        or search_text.lower() in item_name.lower()
-    )
+                item_details = request.get("found_items") or {}
 
-    matches_status = (
-        status_filter == "All"
-        or request["status"] == status_filter
-    )
+                item_name = item_details.get(
+                    "item_name", "Unknown item"
+                )
 
-    if matches_search and matches_status:
-        filtered_requests.append(request)
+                requester_name = request.get(
+                    "requester_name", ""
+                )
 
-            if recovery_requests:
+                matches_search = (
+                    search_text.lower() in requester_name.lower()
+                    or search_text.lower() in item_name.lower()
+                )
 
-                st.write(f"Total Requests: {len(recovery_requests)}")
+                matches_status = (
+                    status_filter == "All"
+                    or request["status"] == status_filter
+                )
 
-                for request in recovery_requests:
+                if matches_search and matches_status:
+                    filtered_requests.append(request)
+
+            # --------------------------------------------------
+            # Display Filtered Requests
+            # --------------------------------------------------
+
+            if filtered_requests:
+
+                st.write(
+                    f"Showing {len(filtered_requests)} "
+                    f"of {len(recovery_requests)} requests"
+                )
+
+                for request in filtered_requests:
 
                     item_details = request.get("found_items") or {}
 
@@ -796,12 +813,32 @@ for request in recovery_requests:
                         f"Request #{request['id']} - {item_name}"
                     ):
 
-                        st.write("**Requester:**", request["requester_name"])
-                        st.write("**Contact:**", request["requester_contact"])
+                        st.write(
+                            "**Requester:**",
+                            request["requester_name"]
+                        )
+
+                        st.write(
+                            "**Contact:**",
+                            request["requester_contact"]
+                        )
+
                         st.write("**Item:**", item_name)
-                        st.write("**Location:**", item_location)
-                        st.write("**Message:**", request["message"])
-                        st.write("**Current Status:**", request["status"])
+
+                        st.write(
+                            "**Location:**",
+                            item_location
+                        )
+
+                        st.write(
+                            "**Message:**",
+                            request["message"]
+                        )
+
+                        st.write(
+                            "**Current Status:**",
+                            request["status"]
+                        )
 
                         status_options = [
                             "Pending",
@@ -810,7 +847,9 @@ for request in recovery_requests:
                             "Rejected"
                         ]
 
-                        current_status = request.get("status", "Pending")
+                        current_status = request.get(
+                            "status", "Pending"
+                        )
 
                         selected_status = st.selectbox(
                             "Update Request Status",
@@ -837,7 +876,10 @@ for request in recovery_requests:
                                     .execute()
                                 )
 
-                                st.success("Status updated successfully!")
+                                st.success(
+                                    "Status updated successfully!"
+                                )
+
                                 st.rerun()
 
                             except Exception as update_error:
@@ -845,13 +887,18 @@ for request in recovery_requests:
                                 st.code(str(update_error))
 
             else:
-                st.info("No recovery requests have been submitted yet.")
+                st.info(
+                    "No recovery requests match your search or filter."
+                )
 
         except Exception as dashboard_error:
             st.error("Unable to load recovery requests.")
             st.code(str(dashboard_error))
 
+        # --------------------------------------------------
         # Logout
+        # --------------------------------------------------
+
         if st.button("Logout"):
 
             try:
