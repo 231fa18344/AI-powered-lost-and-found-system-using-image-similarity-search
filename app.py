@@ -667,6 +667,96 @@ else:
     st.success("Admin logged in successfully!")
 
     if st.button("Logout"):
+            # --------------------------------------------------
+    # Admin Recovery Requests Dashboard
+    # --------------------------------------------------
+
+    st.subheader("📋 Recovery Requests Dashboard")
+
+    try:
+        requests_response = (
+            supabase.table("recovery_requests")
+            .select(
+                "id, item_id, requester_name, requester_contact, "
+                "message, status, created_at, "
+                "found_items(item_name, location)"
+            )
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        recovery_requests = requests_response.data or []
+
+        if recovery_requests:
+
+            st.write(f"Total Requests: {len(recovery_requests)}")
+
+            for request in recovery_requests:
+
+                item_details = request.get("found_items") or {}
+
+                item_name = item_details.get(
+                    "item_name", "Unknown item"
+                )
+
+                item_location = item_details.get(
+                    "location", "Not specified"
+                )
+
+                with st.expander(
+                    f"Request #{request['id']} - {item_name}"
+                ):
+
+                    st.write("**Requester:**", request["requester_name"])
+                    st.write("**Contact:**", request["requester_contact"])
+                    st.write("**Item:**", item_name)
+                    st.write("**Location:**", item_location)
+                    st.write("**Message:**", request["message"])
+                    st.write("**Current Status:**", request["status"])
+
+                    status_options = [
+                        "Pending",
+                        "Contacted",
+                        "Returned",
+                        "Rejected"
+                    ]
+
+                    current_status = request.get("status", "Pending")
+
+                    selected_status = st.selectbox(
+                        "Update Request Status",
+                        status_options,
+                        index=(
+                            status_options.index(current_status)
+                            if current_status in status_options
+                            else 0
+                        ),
+                        key=f"status_{request['id']}"
+                    )
+
+                    if st.button(
+                        "Update Status",
+                        key=f"update_{request['id']}"
+                    ):
+
+                        try:
+                            supabase.table("recovery_requests").update(
+                                {"status": selected_status}
+                            ).eq("id", request["id"]).execute()
+
+                            st.success("Status updated successfully!")
+                            st.rerun()
+
+                        except Exception as update_error:
+                            st.error("Unable to update status.")
+                            st.code(str(update_error))
+
+        else:
+            st.info("No recovery requests have been submitted yet.")
+
+    except Exception as dashboard_error:
+        st.error("Unable to load recovery requests.")
+        st.code(str(dashboard_error))
         supabase.auth.sign_out()
         st.session_state.admin_logged_in = False
         st.rerun()
