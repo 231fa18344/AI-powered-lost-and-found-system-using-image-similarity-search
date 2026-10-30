@@ -639,8 +639,6 @@ except Exception as error:
 st.divider()
 
 
-
-
 # --------------------------------------------------
 # 11. Admin Login and Recovery Requests Dashboard
 # --------------------------------------------------
@@ -784,6 +782,37 @@ else:
 
             col4.metric("✅ Returned", returned_count)
             col5.metric("❌ Rejected", rejected_count)
+
+            st.divider()
+
+            # --------------------------------------------------
+            # Recovery Request Analytics
+            # --------------------------------------------------
+
+            st.subheader("📈 Recovery Request Analytics")
+
+            chart_data = {
+                "Status": [
+                    "Pending",
+                    "Contacted",
+                    "Returned",
+                    "Rejected"
+                ],
+                "Count": [
+                    pending_count,
+                    contacted_count,
+                    returned_count,
+                    rejected_count
+                ]
+            }
+
+            st.write("**Recovery Requests by Status**")
+
+            st.bar_chart(
+                chart_data,
+                x="Status",
+                y="Count"
+            )
 
             st.divider()
 
