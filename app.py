@@ -611,7 +611,69 @@ except Exception as error:
 
 st.divider()
 # --------------------------------------------------
-# 11. Close Database Connection
+# 11. Admin Login
+# --------------------------------------------------
+
+ADMIN_UID = "1fa8098e-27be-46c1-9916-1e20506f9fa5"
+
+st.divider()
+st.header("🔐 Admin Login")
+
+if "admin_logged_in" not in st.session_state:
+    st.session_state.admin_logged_in = False
+
+if not st.session_state.admin_logged_in:
+
+    with st.form("admin_login_form"):
+
+        admin_email = st.text_input("Admin Email")
+
+        admin_password = st.text_input(
+            "Admin Password",
+            type="password"
+        )
+
+        login_button = st.form_submit_button("Login")
+
+    if login_button:
+
+        if not admin_email.strip() or not admin_password:
+            st.warning("Please enter email and password.")
+
+        else:
+            try:
+                login_response = supabase.auth.sign_in_with_password({
+                    "email": admin_email.strip(),
+                    "password": admin_password
+                })
+
+                logged_in_user = login_response.user
+
+                if logged_in_user and str(logged_in_user.id) == ADMIN_UID:
+
+                    st.session_state.admin_logged_in = True
+                    st.success("Admin login successful!")
+                    st.rerun()
+
+                else:
+                    supabase.auth.sign_out()
+                    st.error("You are not authorized as admin.")
+
+            except Exception:
+                st.error("Login failed. Please check your email and password.")
+
+else:
+
+    st.success("Admin logged in successfully!")
+
+    if st.button("Logout"):
+        supabase.auth.sign_out()
+        st.session_state.admin_logged_in = False
+        st.rerun()
+
+
+# --------------------------------------------------
+# 12. Close Database Connection
 # --------------------------------------------------
 
 connection.close()
