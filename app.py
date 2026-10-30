@@ -610,8 +610,9 @@ except Exception as error:
     st.code(str(error))
 
 st.divider()
+
 # --------------------------------------------------
-# 11. Admin Login
+# 11. Admin Login and Recovery Requests Dashboard
 # --------------------------------------------------
 
 ADMIN_UID = "1fa8098e-27be-46c1-9916-1e20506f9fa5"
@@ -650,7 +651,6 @@ if not st.session_state.admin_logged_in:
                 logged_in_user = login_response.user
 
                 if logged_in_user and str(logged_in_user.id) == ADMIN_UID:
-
                     st.session_state.admin_logged_in = True
                     st.success("Admin login successful!")
                     st.rerun()
@@ -666,10 +666,7 @@ else:
 
     st.success("Admin logged in successfully!")
 
-    if st.button("Logout"):
-            # --------------------------------------------------
     # Admin Recovery Requests Dashboard
-    # --------------------------------------------------
 
     st.subheader("📋 Recovery Requests Dashboard")
 
@@ -757,6 +754,10 @@ else:
     except Exception as dashboard_error:
         st.error("Unable to load recovery requests.")
         st.code(str(dashboard_error))
+
+    # Logout button
+
+    if st.button("Logout"):
         supabase.auth.sign_out()
         st.session_state.admin_logged_in = False
         st.rerun()
@@ -767,4 +768,3 @@ else:
 # --------------------------------------------------
 
 connection.close()
-
