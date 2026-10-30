@@ -1,5 +1,7 @@
 
 import os
+import csv
+import io
 import uuid
 import sqlite3
 
@@ -11,6 +13,7 @@ import qrcode
 from io import BytesIO
 import streamlit as st
 from supabase import create_client
+
 
 
 # --------------------------------------------------
@@ -639,6 +642,7 @@ except Exception as error:
 st.divider()
 
 
+
 # --------------------------------------------------
 # 11. Admin Login and Recovery Requests Dashboard
 # --------------------------------------------------
@@ -812,6 +816,93 @@ else:
                 chart_data,
                 x="Status",
                 y="Count"
+            )
+
+            st.divider()
+
+            # --------------------------------------------------
+            # Date-wise Recovery Analytics
+            # --------------------------------------------------
+
+            st.subheader("📅 Date-wise Recovery Analytics")
+
+            date_counts = {}
+
+            for request in recovery_requests:
+
+                created_at = request.get("created_at")
+
+                if created_at:
+                    request_date = created_at[:10]
+
+                    date_counts[request_date] = (
+                        date_counts.get(request_date, 0) + 1
+                    )
+
+            if date_counts:
+
+                sorted_dates = sorted(date_counts.keys())
+
+                date_chart_data = {
+                    "Date": sorted_dates,
+                    "Requests": [
+                        date_counts[date]
+                        for date in sorted_dates
+                    ]
+                }
+
+                st.bar_chart(
+                    date_chart_data,
+                    x="Date",
+                    y="Requests"
+                )
+
+            else:
+                st.info("No date-wise data available.")
+
+            st.divider()
+
+            # --------------------------------------------------
+            # Download Recovery Requests as CSV
+            # --------------------------------------------------
+
+            st.subheader("📥 Download Recovery Report")
+
+            csv_buffer = io.StringIO()
+
+            csv_writer = csv.writer(csv_buffer)
+
+            csv_writer.writerow([
+                "Request ID",
+                "Item Name",
+                "Item Location",
+                "Requester Name",
+                "Requester Contact",
+                "Message",
+                "Status",
+                "Created At"
+            ])
+
+            for request in recovery_requests:
+
+                item_details = request.get("found_items") or {}
+
+                csv_writer.writerow([
+                    request.get("id"),
+                    item_details.get("item_name", "Unknown item"),
+                    item_details.get("location", "Not specified"),
+                    request.get("requester_name"),
+                    request.get("requester_contact"),
+                    request.get("message"),
+                    request.get("status"),
+                    request.get("created_at")
+                ])
+
+            st.download_button(
+                label="📥 Download Recovery Requests CSV",
+                data=csv_buffer.getvalue(),
+                file_name="FindIt_AI_Recovery_Requests.csv",
+                mime="text/csv"
             )
 
             st.divider()
