@@ -240,83 +240,58 @@ def find_similar_items(query_image, image_items):
 
 
 # --------------------------------------------------
-# 5. Website Heading
-# --------------------------------------------------
-# --------------------------------------------------
-# TOP HORIZONTAL NAVIGATION
+# 5. HOME AND SHARE PAGES
 # --------------------------------------------------
 
-st.markdown("""
-<style>
-div[role="radiogroup"] {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    gap: 12px;
-    background: #102944;
-    padding: 14px;
-    border-radius: 14px;
-    border: 1px solid #245080;
-}
+if selected_page == "🏠 Home":
 
-div[role="radiogroup"] label {
-    background: #173B63;
-    padding: 10px 16px;
-    border-radius: 9px;
-    color: white !important;
-}
-</style>
-""", unsafe_allow_html=True)
+    st.title("🔎 FindIt AI")
 
-selected_page = st.radio(
-    "Navigation",
-    [
-        "🏠 Home",
-        "📦 Report Item",
-        "🔍 Search Items",
-        "🤖 AI Image Search",
-        "📩 Recovery Requests",
-        "📤 Share",
-        "🔐 Admin"
-    ],
-    horizontal=True,
-    label_visibility="collapsed"
-)
+    st.header("Intelligent Lost-and-Found System")
 
-st.divider()
+    st.write(
+        "Lost something on campus? Let's help you find it!"
+    )
 
-st.title("🔎 FindIt AI")
-st.header("📱 Share FindIt AI")
-
-website_url = "https://ai-powered-lost-and-found-system-using-image-similarity-search.streamlit.app/"
-
-qr = qrcode.QRCode(box_size=10, border=4)
-qr.add_data(website_url)
-qr.make(fit=True)
-
-qr_image = qr.make_image(fill_color="black", back_color="white")
-
-qr_buffer = BytesIO()
-qr_image.save(qr_buffer, format="PNG")
-qr_bytes = qr_buffer.getvalue()
-
-st.image(qr_bytes, caption="Scan to open FindIt AI", width=250)
-
-st.download_button(
-    label="⬇️ Download QR Code",
-    data=qr_bytes,
-    file_name="FindItAI_QR_Code.png",
-    mime="image/png"
-)
-st.subheader("Intelligent Lost-and-Found System")
-
-st.write(
-    "Lost something on campus? Let's help you find it!"
-)
-
-st.divider()
+    st.info(
+        "FindIt AI helps students find lost items using "
+        "AI-powered image similarity and text search."
+    )
 
 
+elif selected_page == "📤 Share":
+
+    st.title("🔎 FindIt AI")
+
+    st.header("📱 Share FindIt AI")
+
+    website_url = "https://ai-powered-lost-and-found-system-using-image-similarity-search.streamlit.app/"
+
+    qr = qrcode.QRCode(box_size=10, border=4)
+    qr.add_data(website_url)
+    qr.make(fit=True)
+
+    qr_image = qr.make_image(
+        fill_color="black",
+        back_color="white"
+    )
+
+    qr_buffer = BytesIO()
+    qr_image.save(qr_buffer, format="PNG")
+    qr_bytes = qr_buffer.getvalue()
+
+    st.image(
+        qr_bytes,
+        caption="Scan to open FindIt AI",
+        width=250
+    )
+
+    st.download_button(
+        label="⬇️ Download QR Code",
+        data=qr_bytes,
+        file_name="FindItAI_QR_Code.png",
+        mime="image/png"
+    )
 # --------------------------------------------------
 # 6. Report a Found Item
 # --------------------------------------------------
