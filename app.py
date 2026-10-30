@@ -638,6 +638,7 @@ except Exception as error:
 
 st.divider()
 
+
 # --------------------------------------------------
 # 11. Admin Login and Recovery Requests Dashboard
 # --------------------------------------------------
@@ -670,124 +671,168 @@ if not st.session_state.admin_logged_in:
 
         else:
             try:
-                login_response = supabase.auth.sign_in_with_password({
+                # Create a separate client for admin login
+                login_client = create_client(
+                    st.secrets["SUPABASE_URL"],
+                    st.secrets["SUPABASE_KEY"]
+                )
+
+                login_response = login_client.auth.sign_in_with_password({
                     "email": admin_email.strip(),
                     "password": admin_password
                 })
 
                 logged_in_user = login_response.user
+                admin_session = login_response.session
 
-                if logged_in_user and str(logged_in_user.id) == ADMIN_UID:
+                if (
+                    logged_in_user
+                    and str(logged_in_user.id) == ADMIN_UID
+                    and admin_session
+                ):
+
+                    # Save tokens for future Streamlit reruns
+                    st.session_state.admin_access_token = (
+                        admin_session.access_token
+                    )
+
+                    st.session_state.admin_refresh_token = (
+                        admin_session.refresh_token
+                    )
+
                     st.session_state.admin_logged_in = True
+
                     st.success("Admin login successful!")
                     st.rerun()
 
                 else:
-                    supabase.auth.sign_out()
+                    login_client.auth.sign_out()
                     st.error("You are not authorized as admin.")
 
-            except Exception:
+            except Exception as login_error:
                 st.error("Login failed. Please check your email and password.")
+                st.code(str(login_error))
 
 else:
 
     st.success("Admin logged in successfully!")
 
-    # Admin Recovery Requests Dashboard
+    if admin_supabase is None:
+        st.error("Admin session expired. Please login again.")
 
-    st.subheader("📋 Recovery Requests Dashboard")
+        st.session_state.admin_logged_in = False
+        st.session_state.admin_access_token = None
+        st.session_state.admin_refresh_token = None
 
-    try:
-        requests_response = (
-            supabase.table("recovery_requests")
-            .select(
-                "id, item_id, requester_name, requester_contact, "
-                "message, status, created_at, "
-                "found_items(item_name, location)"
+        st.rerun()
+
+    else:
+
+        # Admin Recovery Requests Dashboard
+        st.subheader("📋 Recovery Requests Dashboard")
+
+        try:
+            requests_response = (
+                admin_supabase.table("recovery_requests")
+                .select(
+                    "id, item_id, requester_name, requester_contact, "
+                    "message, status, created_at, "
+                    "found_items(item_name, location)"
+                )
+                .order("created_at", desc=True)
+                .execute()
             )
-            .order("created_at", desc=True)
-            .execute()
-        )
 
-        recovery_requests = requests_response.data or []
+            recovery_requests = requests_response.data or []
 
-        if recovery_requests:
+            if recovery_requests:
 
-            st.write(f"Total Requests: {len(recovery_requests)}")
+                st.write(f"Total Requests: {len(recovery_requests)}")
 
-            for request in recovery_requests:
+                for request in recovery_requests:
 
-                item_details = request.get("found_items") or {}
+                    item_details = request.get("found_items") or {}
 
-                item_name = item_details.get(
-                    "item_name", "Unknown item"
-                )
-
-                item_location = item_details.get(
-                    "location", "Not specified"
-                )
-
-                with st.expander(
-                    f"Request #{request['id']} - {item_name}"
-                ):
-
-                    st.write("**Requester:**", request["requester_name"])
-                    st.write("**Contact:**", request["requester_contact"])
-                    st.write("**Item:**", item_name)
-                    st.write("**Location:**", item_location)
-                    st.write("**Message:**", request["message"])
-                    st.write("**Current Status:**", request["status"])
-
-                    status_options = [
-                        "Pending",
-                        "Contacted",
-                        "Returned",
-                        "Rejected"
-                    ]
-
-                    current_status = request.get("status", "Pending")
-
-                    selected_status = st.selectbox(
-                        "Update Request Status",
-                        status_options,
-                        index=(
-                            status_options.index(current_status)
-                            if current_status in status_options
-                            else 0
-                        ),
-                        key=f"status_{request['id']}"
+                    item_name = item_details.get(
+                        "item_name", "Unknown item"
                     )
 
-                    if st.button(
-                        "Update Status",
-                        key=f"update_{request['id']}"
+                    item_location = item_details.get(
+                        "location", "Not specified"
+                    )
+
+                    with st.expander(
+                        f"Request #{request['id']} - {item_name}"
                     ):
 
-                        try:
-                            supabase.table("recovery_requests").update(
-                                {"status": selected_status}
-                            ).eq("id", request["id"]).execute()
+                        st.write("**Requester:**", request["requester_name"])
+                        st.write("**Contact:**", request["requester_contact"])
+                        st.write("**Item:**", item_name)
+                        st.write("**Location:**", item_location)
+                        st.write("**Message:**", request["message"])
+                        st.write("**Current Status:**", request["status"])
 
-                            st.success("Status updated successfully!")
-                            st.rerun()
+                        status_options = [
+                            "Pending",
+                            "Contacted",
+                            "Returned",
+                            "Rejected"
+                        ]
 
-                        except Exception as update_error:
-                            st.error("Unable to update status.")
-                            st.code(str(update_error))
+                        current_status = request.get("status", "Pending")
 
-        else:
-            st.info("No recovery requests have been submitted yet.")
+                        selected_status = st.selectbox(
+                            "Update Request Status",
+                            status_options,
+                            index=(
+                                status_options.index(current_status)
+                                if current_status in status_options
+                                else 0
+                            ),
+                            key=f"status_{request['id']}"
+                        )
 
-    except Exception as dashboard_error:
-        st.error("Unable to load recovery requests.")
-        st.code(str(dashboard_error))
+                        if st.button(
+                            "Update Status",
+                            key=f"update_{request['id']}"
+                        ):
 
-    # Logout button
+                            try:
+                                (
+                                    admin_supabase
+                                    .table("recovery_requests")
+                                    .update({"status": selected_status})
+                                    .eq("id", request["id"])
+                                    .execute()
+                                )
 
-    if st.button("Logout"):
-        supabase.auth.sign_out()
-        st.session_state.admin_logged_in = False
-        st.rerun()
+                                st.success("Status updated successfully!")
+                                st.rerun()
+
+                            except Exception as update_error:
+                                st.error("Unable to update status.")
+                                st.code(str(update_error))
+
+            else:
+                st.info("No recovery requests have been submitted yet.")
+
+        except Exception as dashboard_error:
+            st.error("Unable to load recovery requests.")
+            st.code(str(dashboard_error))
+
+        # Logout
+        if st.button("Logout"):
+
+            try:
+                admin_supabase.auth.sign_out()
+            except Exception:
+                pass
+
+            st.session_state.admin_logged_in = False
+            st.session_state.admin_access_token = None
+            st.session_state.admin_refresh_token = None
+
+            st.rerun()
 
 
 # --------------------------------------------------
