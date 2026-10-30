@@ -24,18 +24,47 @@ st.set_page_config(
 )
 
 
+
 # --------------------------------------------------
 # 2. Directories and Database
 # --------------------------------------------------
 
 os.makedirs("item_images", exist_ok=True)
 
-# Connect to Supabase
+# Connect to Supabase (Public client)
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
     st.secrets["SUPABASE_KEY"]
 )
 
+# Separate Admin client
+admin_supabase = None
+
+# Restore admin login session after Streamlit rerun
+if (
+    st.session_state.get("admin_access_token")
+    and st.session_state.get("admin_refresh_token")
+):
+    try:
+        admin_supabase = create_client(
+            st.secrets["SUPABASE_URL"],
+            st.secrets["SUPABASE_KEY"]
+        )
+
+        admin_supabase.auth.set_session(
+            st.session_state.admin_access_token,
+            st.session_state.admin_refresh_token
+        )
+
+    except Exception:
+        admin_supabase = None
+
+        st.session_state.admin_access_token = None
+        st.session_state.admin_refresh_token = None
+        st.session_state.admin_logged_in = False
+
+
+# SQLite Database Connection
 connection = sqlite3.connect("findit.db")
 cursor = connection.cursor()
 
@@ -59,8 +88,6 @@ if "image_path" not in columns:
         "ALTER TABLE found_items ADD COLUMN image_path TEXT"
     )
     connection.commit()
-
-
 # --------------------------------------------------
 # 3. Load CLIP AI Model
 # --------------------------------------------------
