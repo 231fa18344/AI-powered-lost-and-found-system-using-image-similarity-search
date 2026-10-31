@@ -239,7 +239,6 @@ def find_similar_items(query_image, image_items):
     return ranked_items
 
 
-
 # --------------------------------------------------
 # 5. TOP NAVIGATION AND WEBSITE PAGES
 # --------------------------------------------------
@@ -253,6 +252,7 @@ selected_page = st.radio(
         "📦 Report Item",
         "🔍 Search Items",
         "🤖 AI Image Search",
+        "📋 All Found Items",
         "📩 Recovery Requests",
         "📤 Share",
         "🔐 Admin"
@@ -739,52 +739,91 @@ elif selected_page == "🔍 Search Items":
 
     st.divider()
 # --------------------------------------------------
-# 9. Display All Found Items
+# 9. DISPLAY ALL FOUND ITEMS
 # --------------------------------------------------
 
-st.header("📋 All Found Items")
+elif selected_page == "📋 All Found Items":
 
-response = (
-    supabase.table("found_items")
-    .select("*")
-    .order("id", desc=True)
-    .execute()
-)
+    st.title("🔎 FindIt AI")
 
-all_items = response.data
-
-if all_items:
+    st.header("📋 All Found Items")
 
     st.write(
-        f"Total found items reported: {len(all_items)}"
+        "View all the items reported by students."
     )
 
-    for item in all_items:
+    st.divider()
 
-        with st.container(border=True):
+    try:
 
-            col1, col2 = st.columns([1, 2])
+        response = (
+            supabase.table("found_items")
+            .select("*")
+            .order("id", desc=True)
+            .execute()
+        )
 
-            with col1:
+        all_items = response.data
 
-                image_path = item.get("image_path")
+        if all_items:
 
-                if image_path:
-                    st.image(image_path, width=220)
-                else:
-                    st.caption("No photo available")
+            st.success(
+                f"Total found items reported: {len(all_items)}"
+            )
 
-            with col2:
+            for item in all_items:
 
-                st.write(f"**Item:** {item.get('item_name', '')}")
-                st.write(f"**Description:** {item.get('description', '')}")
-                st.write(f"**Location:** {item.get('location', '')}")
+                with st.container(border=True):
 
-else:
+                    col1, col2 = st.columns([1, 2])
 
-    st.info("No found items have been saved yet.")
+                    with col1:
 
+                        image_path = item.get("image_path")
 
+                        if image_path:
+
+                            st.image(
+                                image_path,
+                                width=220
+                            )
+
+                        else:
+
+                            st.caption(
+                                "No photo available"
+                            )
+
+                    with col2:
+
+                        st.write(
+                            f"**Item:** "
+                            f"{item.get('item_name', '')}"
+                        )
+
+                        st.write(
+                            f"**Description:** "
+                            f"{item.get('description', '')}"
+                        )
+
+                        st.write(
+                            f"**Location:** "
+                            f"{item.get('location', '')}"
+                        )
+
+        else:
+
+            st.info(
+                "No found items have been saved yet."
+            )
+
+    except Exception as error:
+
+        st.error(
+            f"Unable to load found items: {error}"
+        )
+
+    st.divider()
 
 # --------------------------------------------------
 # 10. Safe Item Recovery Request
