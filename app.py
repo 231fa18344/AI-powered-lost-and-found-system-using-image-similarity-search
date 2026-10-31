@@ -940,324 +940,292 @@ st.divider()
 
 
 
+
 # --------------------------------------------------
 # 11. Admin Login and Recovery Requests Dashboard
 # --------------------------------------------------
 
-ADMIN_UID = "1fa8098e-27be-46c1-9916-1e20506f9fa5"
+elif selected_page == "🔐 Admin":
 
-st.divider()
-st.header("🔐 Admin Login")
+    ADMIN_UID = "1fa8098e-27be-46c1-9916-1e20506f9fa5"
 
-if "admin_logged_in" not in st.session_state:
-    st.session_state.admin_logged_in = False
+    st.title("🔎 FindIt AI")
+    st.divider()
+    st.header("🔐 Admin Login")
 
-if not st.session_state.admin_logged_in:
-
-    with st.form("admin_login_form"):
-
-        admin_email = st.text_input("Admin Email")
-
-        admin_password = st.text_input(
-            "Admin Password",
-            type="password"
-        )
-
-        login_button = st.form_submit_button("Login")
-
-    if login_button:
-
-        if not admin_email.strip() or not admin_password:
-            st.warning("Please enter email and password.")
-
-        else:
-            try:
-                login_client = create_client(
-                    st.secrets["SUPABASE_URL"],
-                    st.secrets["SUPABASE_KEY"]
-                )
-
-                login_response = login_client.auth.sign_in_with_password({
-                    "email": admin_email.strip(),
-                    "password": admin_password
-                })
-
-                logged_in_user = login_response.user
-                admin_session = login_response.session
-
-                if (
-                    logged_in_user
-                    and str(logged_in_user.id) == ADMIN_UID
-                    and admin_session
-                ):
-
-                    st.session_state.admin_access_token = (
-                        admin_session.access_token
-                    )
-
-                    st.session_state.admin_refresh_token = (
-                        admin_session.refresh_token
-                    )
-
-                    st.session_state.admin_logged_in = True
-
-                    st.success("Admin login successful!")
-                    st.rerun()
-
-                else:
-                    login_client.auth.sign_out()
-                    st.error("You are not authorized as admin.")
-
-            except Exception as login_error:
-                st.error("Login failed. Please check your email and password.")
-                st.code(str(login_error))
-
-else:
-
-    st.success("Admin logged in successfully!")
-
-    if admin_supabase is None:
-
-        st.error("Admin session expired. Please login again.")
-
+    if "admin_logged_in" not in st.session_state:
         st.session_state.admin_logged_in = False
-        st.session_state.admin_access_token = None
-        st.session_state.admin_refresh_token = None
 
-        st.rerun()
+    if not st.session_state.admin_logged_in:
+
+        with st.form("admin_login_form"):
+
+            admin_email = st.text_input("Admin Email")
+
+            admin_password = st.text_input(
+                "Admin Password",
+                type="password"
+            )
+
+            login_button = st.form_submit_button("Login")
+
+        if login_button:
+
+            if not admin_email.strip() or not admin_password:
+                st.warning("Please enter email and password.")
+
+            else:
+                try:
+                    login_client = create_client(
+                        st.secrets["SUPABASE_URL"],
+                        st.secrets["SUPABASE_KEY"]
+                    )
+
+                    login_response = login_client.auth.sign_in_with_password({
+                        "email": admin_email.strip(),
+                        "password": admin_password
+                    })
+
+                    logged_in_user = login_response.user
+                    admin_session = login_response.session
+
+                    if (
+                        logged_in_user
+                        and str(logged_in_user.id) == ADMIN_UID
+                        and admin_session
+                    ):
+
+                        st.session_state.admin_access_token = (
+                            admin_session.access_token
+                        )
+
+                        st.session_state.admin_refresh_token = (
+                            admin_session.refresh_token
+                        )
+
+                        st.session_state.admin_logged_in = True
+
+                        st.success("Admin login successful!")
+                        st.rerun()
+
+                    else:
+                        login_client.auth.sign_out()
+                        st.error("You are not authorized as admin.")
+
+                except Exception as login_error:
+                    st.error("Login failed. Please check your email and password.")
+                    st.code(str(login_error))
 
     else:
 
-        st.subheader("📋 Recovery Requests Dashboard")
+        st.success("Admin logged in successfully!")
 
-        try:
+        if admin_supabase is None:
 
-            requests_response = (
-                admin_supabase.table("recovery_requests")
-                .select(
-                    "id, item_id, requester_name, requester_contact, "
-                    "message, status, created_at, "
-                    "found_items(item_name, location)"
-                )
-                .order("created_at", desc=True)
-                .execute()
-            )
+            st.error("Admin session expired. Please login again.")
 
-            recovery_requests = requests_response.data or []
+            st.session_state.admin_logged_in = False
+            st.session_state.admin_access_token = None
+            st.session_state.admin_refresh_token = None
 
-            # --------------------------------------------------
-            # Recovery Request Statistics
-            # --------------------------------------------------
+            st.rerun()
 
-            st.subheader("📊 Recovery Request Statistics")
+        else:
 
-            total_requests = len(recovery_requests)
+            st.subheader("📋 Recovery Requests Dashboard")
 
-            pending_count = sum(
-                1 for r in recovery_requests
-                if r.get("status") == "Pending"
-            )
+            try:
 
-            contacted_count = sum(
-                1 for r in recovery_requests
-                if r.get("status") == "Contacted"
-            )
-
-            returned_count = sum(
-                1 for r in recovery_requests
-                if r.get("status") == "Returned"
-            )
-
-            rejected_count = sum(
-                1 for r in recovery_requests
-                if r.get("status") == "Rejected"
-            )
-
-            col1, col2, col3 = st.columns(3)
-
-            col1.metric("📋 Total Requests", total_requests)
-            col2.metric("⏳ Pending", pending_count)
-            col3.metric("📞 Contacted", contacted_count)
-
-            col4, col5 = st.columns(2)
-
-            col4.metric("✅ Returned", returned_count)
-            col5.metric("❌ Rejected", rejected_count)
-
-            st.divider()
-
-            # --------------------------------------------------
-            # Recovery Request Analytics
-            # --------------------------------------------------
-
-            st.subheader("📈 Recovery Request Analytics")
-
-            chart_data = {
-                "Status": [
-                    "Pending",
-                    "Contacted",
-                    "Returned",
-                    "Rejected"
-                ],
-                "Count": [
-                    pending_count,
-                    contacted_count,
-                    returned_count,
-                    rejected_count
-                ]
-            }
-
-            st.write("**Recovery Requests by Status**")
-
-            st.bar_chart(
-                chart_data,
-                x="Status",
-                y="Count"
-            )
-
-            st.divider()
-
-            # --------------------------------------------------
-            # Date-wise Recovery Analytics
-            # --------------------------------------------------
-
-            st.subheader("📅 Date-wise Recovery Analytics")
-
-            date_counts = {}
-
-            for request in recovery_requests:
-
-                created_at = request.get("created_at")
-
-                if created_at:
-                    request_date = created_at[:10]
-
-                    date_counts[request_date] = (
-                        date_counts.get(request_date, 0) + 1
+                requests_response = (
+                    admin_supabase.table("recovery_requests")
+                    .select(
+                        "id, item_id, requester_name, requester_contact, "
+                        "message, status, created_at, "
+                        "found_items(item_name, location)"
                     )
+                    .order("created_at", desc=True)
+                    .execute()
+                )
 
-            if date_counts:
+                recovery_requests = requests_response.data or []
 
-                sorted_dates = sorted(date_counts.keys())
+                # --------------------------------------------------
+                # Recovery Request Statistics
+                # --------------------------------------------------
 
-                date_chart_data = {
-                    "Date": sorted_dates,
-                    "Requests": [
-                        date_counts[date]
-                        for date in sorted_dates
+                st.subheader("📊 Recovery Request Statistics")
+
+                total_requests = len(recovery_requests)
+
+                pending_count = sum(
+                    1 for r in recovery_requests
+                    if r.get("status") == "Pending"
+                )
+
+                contacted_count = sum(
+                    1 for r in recovery_requests
+                    if r.get("status") == "Contacted"
+                )
+
+                returned_count = sum(
+                    1 for r in recovery_requests
+                    if r.get("status") == "Returned"
+                )
+
+                rejected_count = sum(
+                    1 for r in recovery_requests
+                    if r.get("status") == "Rejected"
+                )
+
+                col1, col2, col3 = st.columns(3)
+
+                col1.metric("📋 Total Requests", total_requests)
+                col2.metric("⏳ Pending", pending_count)
+                col3.metric("📞 Contacted", contacted_count)
+
+                col4, col5 = st.columns(2)
+
+                col4.metric("✅ Returned", returned_count)
+                col5.metric("❌ Rejected", rejected_count)
+
+                st.divider()
+
+                # --------------------------------------------------
+                # Recovery Request Analytics
+                # --------------------------------------------------
+
+                st.subheader("📈 Recovery Request Analytics")
+
+                chart_data = {
+                    "Status": [
+                        "Pending",
+                        "Contacted",
+                        "Returned",
+                        "Rejected"
+                    ],
+                    "Count": [
+                        pending_count,
+                        contacted_count,
+                        returned_count,
+                        rejected_count
                     ]
                 }
 
+                st.write("**Recovery Requests by Status**")
+
                 st.bar_chart(
-                    date_chart_data,
-                    x="Date",
-                    y="Requests"
+                    chart_data,
+                    x="Status",
+                    y="Count"
                 )
 
-            else:
-                st.info("No date-wise data available.")
+                st.divider()
 
-            st.divider()
+                # --------------------------------------------------
+                # Date-wise Recovery Analytics
+                # --------------------------------------------------
 
-            # --------------------------------------------------
-            # Download Recovery Requests as CSV
-            # --------------------------------------------------
+                st.subheader("📅 Date-wise Recovery Analytics")
 
-            st.subheader("📥 Download Recovery Report")
+                date_counts = {}
 
-            csv_buffer = io.StringIO()
+                for request in recovery_requests:
 
-            csv_writer = csv.writer(csv_buffer)
+                    created_at = request.get("created_at")
 
-            csv_writer.writerow([
-                "Request ID",
-                "Item Name",
-                "Item Location",
-                "Requester Name",
-                "Requester Contact",
-                "Message",
-                "Status",
-                "Created At"
-            ])
+                    if created_at:
+                        request_date = created_at[:10]
 
-            for request in recovery_requests:
+                        date_counts[request_date] = (
+                            date_counts.get(request_date, 0) + 1
+                        )
 
-                item_details = request.get("found_items") or {}
+                if date_counts:
+
+                    sorted_dates = sorted(date_counts.keys())
+
+                    date_chart_data = {
+                        "Date": sorted_dates,
+                        "Requests": [
+                            date_counts[date]
+                            for date in sorted_dates
+                        ]
+                    }
+
+                    st.bar_chart(
+                        date_chart_data,
+                        x="Date",
+                        y="Requests"
+                    )
+
+                else:
+                    st.info("No date-wise data available.")
+
+                st.divider()
+
+                # --------------------------------------------------
+                # Download Recovery Requests as CSV
+                # --------------------------------------------------
+
+                st.subheader("📥 Download Recovery Report")
+
+                csv_buffer = io.StringIO()
+
+                csv_writer = csv.writer(csv_buffer)
 
                 csv_writer.writerow([
-                    request.get("id"),
-                    item_details.get("item_name", "Unknown item"),
-                    item_details.get("location", "Not specified"),
-                    request.get("requester_name"),
-                    request.get("requester_contact"),
-                    request.get("message"),
-                    request.get("status"),
-                    request.get("created_at")
+                    "Request ID",
+                    "Item Name",
+                    "Item Location",
+                    "Requester Name",
+                    "Requester Contact",
+                    "Message",
+                    "Status",
+                    "Created At"
                 ])
 
-            st.download_button(
-                label="📥 Download Recovery Requests CSV",
-                data=csv_buffer.getvalue(),
-                file_name="FindIt_AI_Recovery_Requests.csv",
-                mime="text/csv"
-            )
+                for request in recovery_requests:
 
-            st.divider()
+                    item_details = request.get("found_items") or {}
 
-            # --------------------------------------------------
-            # Search and Filter Options
-            # --------------------------------------------------
+                    csv_writer.writerow([
+                        request.get("id"),
+                        item_details.get("item_name", "Unknown item"),
+                        item_details.get("location", "Not specified"),
+                        request.get("requester_name"),
+                        request.get("requester_contact"),
+                        request.get("message"),
+                        request.get("status"),
+                        request.get("created_at")
+                    ])
 
-            st.subheader("🔎 Search and Filter Requests")
-
-            search_text = st.text_input(
-                "Search by requester name or item name"
-            )
-
-            status_filter = st.selectbox(
-                "Filter by Status",
-                ["All", "Pending", "Contacted", "Returned", "Rejected"]
-            )
-
-            filtered_requests = []
-
-            for request in recovery_requests:
-
-                item_details = request.get("found_items") or {}
-
-                item_name = item_details.get(
-                    "item_name", "Unknown item"
+                st.download_button(
+                    label="📥 Download Recovery Requests CSV",
+                    data=csv_buffer.getvalue(),
+                    file_name="FindIt_AI_Recovery_Requests.csv",
+                    mime="text/csv"
                 )
 
-                requester_name = request.get(
-                    "requester_name", ""
+                st.divider()
+
+                # --------------------------------------------------
+                # Search and Filter Options
+                # --------------------------------------------------
+
+                st.subheader("🔎 Search and Filter Requests")
+
+                search_text = st.text_input(
+                    "Search by requester name or item name"
                 )
 
-                matches_search = (
-                    search_text.lower() in requester_name.lower()
-                    or search_text.lower() in item_name.lower()
+                status_filter = st.selectbox(
+                    "Filter by Status",
+                    ["All", "Pending", "Contacted", "Returned", "Rejected"]
                 )
 
-                matches_status = (
-                    status_filter == "All"
-                    or request["status"] == status_filter
-                )
+                filtered_requests = []
 
-                if matches_search and matches_status:
-                    filtered_requests.append(request)
-
-            # --------------------------------------------------
-            # Display Filtered Requests
-            # --------------------------------------------------
-
-            if filtered_requests:
-
-                st.write(
-                    f"Showing {len(filtered_requests)} "
-                    f"of {len(recovery_requests)} requests"
-                )
-
-                for request in filtered_requests:
+                for request in recovery_requests:
 
                     item_details = request.get("found_items") or {}
 
@@ -1265,113 +1233,149 @@ else:
                         "item_name", "Unknown item"
                     )
 
-                    item_location = item_details.get(
-                        "location", "Not specified"
+                    requester_name = request.get(
+                        "requester_name", ""
                     )
 
-                    with st.expander(
-                        f"Request #{request['id']} - {item_name}"
-                    ):
+                    matches_search = (
+                        search_text.lower() in requester_name.lower()
+                        or search_text.lower() in item_name.lower()
+                    )
 
-                        st.write(
-                            "**Requester:**",
-                            request["requester_name"]
+                    matches_status = (
+                        status_filter == "All"
+                        or request.get("status") == status_filter
+                    )
+
+                    if matches_search and matches_status:
+                        filtered_requests.append(request)
+
+                # --------------------------------------------------
+                # Display Filtered Requests
+                # --------------------------------------------------
+
+                if filtered_requests:
+
+                    st.write(
+                        f"Showing {len(filtered_requests)} "
+                        f"of {len(recovery_requests)} requests"
+                    )
+
+                    for request in filtered_requests:
+
+                        item_details = request.get("found_items") or {}
+
+                        item_name = item_details.get(
+                            "item_name", "Unknown item"
                         )
 
-                        st.write(
-                            "**Contact:**",
-                            request["requester_contact"]
+                        item_location = item_details.get(
+                            "location", "Not specified"
                         )
 
-                        st.write("**Item:**", item_name)
-
-                        st.write(
-                            "**Location:**",
-                            item_location
-                        )
-
-                        st.write(
-                            "**Message:**",
-                            request["message"]
-                        )
-
-                        st.write(
-                            "**Current Status:**",
-                            request["status"]
-                        )
-
-                        status_options = [
-                            "Pending",
-                            "Contacted",
-                            "Returned",
-                            "Rejected"
-                        ]
-
-                        current_status = request.get(
-                            "status", "Pending"
-                        )
-
-                        selected_status = st.selectbox(
-                            "Update Request Status",
-                            status_options,
-                            index=(
-                                status_options.index(current_status)
-                                if current_status in status_options
-                                else 0
-                            ),
-                            key=f"status_{request['id']}"
-                        )
-
-                        if st.button(
-                            "Update Status",
-                            key=f"update_{request['id']}"
+                        with st.expander(
+                            f"Request #{request['id']} - {item_name}"
                         ):
 
-                            try:
+                            st.write(
+                                "**Requester:**",
+                                request.get("requester_name", "")
+                            )
 
-                                (
-                                    admin_supabase
-                                    .table("recovery_requests")
-                                    .update({"status": selected_status})
-                                    .eq("id", request["id"])
-                                    .execute()
-                                )
+                            st.write(
+                                "**Contact:**",
+                                request.get("requester_contact", "")
+                            )
 
-                                st.success(
-                                    "Status updated successfully!"
-                                )
+                            st.write("**Item:**", item_name)
 
-                                st.rerun()
+                            st.write(
+                                "**Location:**",
+                                item_location
+                            )
 
-                            except Exception as update_error:
-                                st.error("Unable to update status.")
-                                st.code(str(update_error))
+                            st.write(
+                                "**Message:**",
+                                request.get("message", "")
+                            )
 
-            else:
-                st.info(
-                    "No recovery requests match your search or filter."
-                )
+                            st.write(
+                                "**Current Status:**",
+                                request.get("status", "Pending")
+                            )
 
-        except Exception as dashboard_error:
-            st.error("Unable to load recovery requests.")
-            st.code(str(dashboard_error))
+                            status_options = [
+                                "Pending",
+                                "Contacted",
+                                "Returned",
+                                "Rejected"
+                            ]
 
-        # --------------------------------------------------
-        # Logout
-        # --------------------------------------------------
+                            current_status = request.get(
+                                "status", "Pending"
+                            )
 
-        if st.button("Logout"):
+                            selected_status = st.selectbox(
+                                "Update Request Status",
+                                status_options,
+                                index=(
+                                    status_options.index(current_status)
+                                    if current_status in status_options
+                                    else 0
+                                ),
+                                key=f"status_{request['id']}"
+                            )
 
-            try:
-                admin_supabase.auth.sign_out()
-            except Exception:
-                pass
+                            if st.button(
+                                "Update Status",
+                                key=f"update_{request['id']}"
+                            ):
 
-            st.session_state.admin_logged_in = False
-            st.session_state.admin_access_token = None
-            st.session_state.admin_refresh_token = None
+                                try:
 
-            st.rerun()
+                                    (
+                                        admin_supabase
+                                        .table("recovery_requests")
+                                        .update({"status": selected_status})
+                                        .eq("id", request["id"])
+                                        .execute()
+                                    )
+
+                                    st.success(
+                                        "Status updated successfully!"
+                                    )
+
+                                    st.rerun()
+
+                                except Exception as update_error:
+                                    st.error("Unable to update status.")
+                                    st.code(str(update_error))
+
+                else:
+                    st.info(
+                        "No recovery requests match your search or filter."
+                    )
+
+            except Exception as dashboard_error:
+                st.error("Unable to load recovery requests.")
+                st.code(str(dashboard_error))
+
+            # --------------------------------------------------
+            # Logout
+            # --------------------------------------------------
+
+            if st.button("Logout"):
+
+                try:
+                    admin_supabase.auth.sign_out()
+                except Exception:
+                    pass
+
+                st.session_state.admin_logged_in = False
+                st.session_state.admin_access_token = None
+                st.session_state.admin_refresh_token = None
+
+                st.rerun()
 
 
 # --------------------------------------------------
