@@ -238,9 +238,6 @@ def find_similar_items(query_image, image_items):
 
     return ranked_items
 
-
-
-
 # --------------------------------------------------
 # 5. TOP NAVIGATION AND WEBSITE PAGES
 # --------------------------------------------------
@@ -330,32 +327,171 @@ if selected_page == "🏠 Home":
 
     st.title("🔎 FindIt AI")
 
-    st.header("Intelligent Lost-and-Found System")
+    st.subheader(
+        "Your Smart Campus Lost-and-Found Assistant"
+    )
 
     st.write(
-        "Lost something on campus? Let's help you find it!"
+        "Lost something on campus? Don't worry! "
+        "FindIt AI helps you find your lost belongings "
+        "quickly and easily using Artificial Intelligence."
+    )
+
+    st.divider()
+
+    # ABOUT FINDIT AI
+
+    st.header("👋 Welcome to FindIt AI")
+
+    st.write(
+        "FindIt AI is an intelligent lost-and-found "
+        "platform designed especially for students."
+    )
+
+    st.write(
+        "Students can report items they have found "
+        "and search for belongings they have lost. "
+        "The system allows users to search using item "
+        "names, descriptions, or uploaded images."
+    )
+
+    st.write(
+        "Using AI-powered image similarity technology, "
+        "FindIt AI helps identify visually similar items "
+        "even when their descriptions are different."
     )
 
     st.info(
-        "FindIt AI helps students find lost items "
-        "using AI-powered image similarity and text search."
+        "🎯 Our Mission: To make finding lost belongings "
+        "on campus simple, smart, and convenient."
     )
 
-    st.subheader("✨ Main Features")
+    st.divider()
+
+    # HOW IT WORKS
+
+    st.header("⚡ How Does FindIt AI Work?")
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown("### 📦 Report Items")
-        st.write("Report items that you have found.")
+
+        st.markdown("### 1️⃣ Report")
+
+        st.write(
+            "Found an item? Upload its photo and provide "
+            "its name, description, and location."
+        )
 
     with col2:
-        st.markdown("### 🤖 AI Image Search")
-        st.write("Find similar items using an image.")
+
+        st.markdown("### 2️⃣ Search")
+
+        st.write(
+            "Lost an item? Search using its name, "
+            "description, or upload a photo to find "
+            "similar items."
+        )
 
     with col3:
+
+        st.markdown("### 3️⃣ Recover")
+
+        st.write(
+            "Identify a possible match and submit "
+            "a recovery request to help get your "
+            "belonging back."
+        )
+
+    st.divider()
+
+    # MAIN FEATURES
+
+    st.header("✨ Explore Our Features")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.markdown("### 📦 Report Found Items")
+
+        st.write(
+            "Report items found on campus by adding "
+            "their photos and details."
+        )
+
         st.markdown("### 🔍 Text Search")
-        st.write("Search using item name or description.")
+
+        st.write(
+            "Search for lost belongings using item "
+            "names and descriptions."
+        )
+
+        st.markdown("### 📋 All Found Items")
+
+        st.write(
+            "View the list of items reported by students."
+        )
+
+    with col2:
+
+        st.markdown("### 🤖 AI Image Search")
+
+        st.write(
+            "Upload an image and find visually similar "
+            "items using AI technology."
+        )
+
+        st.markdown("### 📩 Recovery Requests")
+
+        st.write(
+            "Submit a request when you identify an item "
+            "that may belong to you."
+        )
+
+        st.markdown("### 🔐 Admin Dashboard")
+
+        st.write(
+            "Authorized administrators can review "
+            "recovery requests and update their status."
+        )
+
+    st.divider()
+
+    # TYPES OF ITEMS
+
+    st.header("🎒 What Can You Find?")
+
+    st.write(
+        "You can report and search for different "
+        "personal belongings, including:"
+    )
+
+    item_col1, item_col2, item_col3 = st.columns(3)
+
+    with item_col1:
+        st.write("🪪 ID Cards")
+        st.write("👛 Wallets")
+
+    with item_col2:
+        st.write("🔑 Keys")
+        st.write("🎒 Bags")
+
+    with item_col3:
+        st.write("🎧 Earphones")
+        st.write("📱 Other belongings")
+
+    st.divider()
+
+    # FOOTER
+
+    st.success(
+        "💙 FindIt AI — Helping Lost Items Find Their Way Home!"
+    )
+
+    st.caption(
+        "An AI-powered campus lost-and-found system."
+    )
 
 
 # --------------------------------------------------
@@ -400,7 +536,6 @@ elif selected_page == "📤 Share":
         file_name="FindItAI_QR_Code.png",
         mime="image/png"
     )
-
 
 # --------------------------------------------------
 # 6. REPORT A FOUND ITEM
