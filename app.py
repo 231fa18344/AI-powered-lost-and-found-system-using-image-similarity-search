@@ -239,28 +239,99 @@ def find_similar_items(query_image, image_items):
     return ranked_items
 
 
+
 # --------------------------------------------------
 # 5. TOP NAVIGATION AND WEBSITE PAGES
 # --------------------------------------------------
 
-# TOP HORIZONTAL NAVIGATION
+# TOP BUTTON NAVIGATION
 
-selected_page = st.radio(
-    "Navigation",
-    [
-        "🏠 Home",
-        "📦 Report Item",
-        "🔍 Search Items",
-        "🤖 AI Image Search",
-        "📋 All Found Items",
-        "📩 Recovery Requests",
-        "📤 Share",
-        "🔐 Admin"
-    ],
-    horizontal=True,
-    label_visibility="collapsed",
-    key="main_navigation"
-)
+pages = [
+    "🏠 Home",
+    "📦 Report Item",
+    "🔍 Search Items",
+    "🤖 AI Image Search",
+    "📋 All Found Items",
+    "📩 Recovery Requests",
+    "📤 Share",
+    "🔐 Admin"
+]
+
+if "selected_page" not in st.session_state:
+    st.session_state.selected_page = "🏠 Home"
+
+# Navigation button styling
+
+st.markdown("""
+<style>
+
+div.stButton > button {
+    width: 100%;
+    min-height: 55px;
+    border-radius: 12px;
+    border: 1px solid #35547d;
+    background-color: #142b49;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+div.stButton > button:hover {
+    background-color: #24558a;
+    color: white;
+    border-color: #60a5fa;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
+# FIRST ROW OF BUTTONS
+
+row1 = st.columns(4)
+
+for i in range(4):
+
+    with row1[i]:
+
+        if st.button(
+            pages[i],
+            key=f"nav_button_{i}",
+            type=(
+                "primary"
+                if st.session_state.selected_page == pages[i]
+                else "secondary"
+            )
+        ):
+
+            st.session_state.selected_page = pages[i]
+            st.rerun()
+
+
+# SECOND ROW OF BUTTONS
+
+row2 = st.columns(4)
+
+for i in range(4, 8):
+
+    with row2[i - 4]:
+
+        if st.button(
+            pages[i],
+            key=f"nav_button_{i}",
+            type=(
+                "primary"
+                if st.session_state.selected_page == pages[i]
+                else "secondary"
+            )
+        ):
+
+            st.session_state.selected_page = pages[i]
+            st.rerun()
+
+
+selected_page = st.session_state.selected_page
 
 st.divider()
 
@@ -343,6 +414,7 @@ elif selected_page == "📤 Share":
         file_name="FindItAI_QR_Code.png",
         mime="image/png"
     )
+
 # --------------------------------------------------
 # 6. REPORT A FOUND ITEM
 # --------------------------------------------------
