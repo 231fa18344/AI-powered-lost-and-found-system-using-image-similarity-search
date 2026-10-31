@@ -822,26 +822,33 @@ elif selected_page == "🤖 AI Image Search":
 
 
 
+
 # --------------------------------------------------
-# 8. ADVANCED TEXT SEARCH AND AUTOCOMPLETE FILTERS
+# 8. ADVANCED TEXT SEARCH, AUTOCOMPLETE
+#    AND SMART LOCATION MATCHING
 # --------------------------------------------------
 
 elif selected_page == "🔍 Search Items":
+
+    import re
+    import datetime
+    from difflib import SequenceMatcher
 
     st.title("🔎 FindIt AI")
     st.header("🔍 Advanced Item Search")
 
     st.write(
-        "Search for lost belongings using item name, "
-        "description, or location. Use filters to find "
-        "the items more easily."
+        "Search for found items using item name, description, "
+        "or location. Use smart filters to find matching items."
     )
 
     st.divider()
 
     try:
 
+        # --------------------------------------------------
         # LOAD ALL FOUND ITEMS
+        # --------------------------------------------------
 
         response = (
             supabase.table("found_items")
@@ -858,7 +865,9 @@ elif selected_page == "🔍 Search Items":
 
         else:
 
+            # --------------------------------------------------
             # CATEGORY DETECTION
+            # --------------------------------------------------
 
             def get_item_category(item):
 
@@ -894,31 +903,93 @@ elif selected_page == "🔍 Search Items":
                 else:
                     return "Other"
 
-            # AUTOCOMPLETE SELECTION CALLBACKS
+            # --------------------------------------------------
+            # LOCATION ALIASES
+            # Add more campus short forms here when needed.
+            # --------------------------------------------------
+
+            LOCATION_ALIASES = [
+                {"vu", "vignan", "vignan university"},
+                {"library", "central library"},
+                {"canteen", "college canteen"}
+            ]
+
+            def normalize_location(location):
+
+                return re.sub(
+                    r"[^a-z0-9 ]",
+                    "",
+                    str(location).lower()
+                ).strip()
+
+            # --------------------------------------------------
+            # SMART LOCATION MATCHING
+            # --------------------------------------------------
+
+            def locations_match(location1, location2):
+
+                a = normalize_location(location1)
+                b = normalize_location(location2)
+
+                if not a or not b:
+                    return False
+
+                # Exact match
+
+                if a == b:
+                    return True
+
+                # Alias matching
+
+                for group in LOCATION_ALIASES:
+
+                    if a in group and b in group:
+                        return True
+
+                # Partial phrase matching
+
+                if a in b or b in a:
+                    return True
+
+                # Fuzzy spelling matching
+
+                similarity = SequenceMatcher(
+                    None, a, b
+                ).ratio()
+
+                return similarity >= 0.75
+
+            # --------------------------------------------------
+            # AUTOCOMPLETE CALLBACKS
+            # --------------------------------------------------
 
             def choose_category(value):
+
                 st.session_state["category_autocomplete"] = value
 
             def choose_location(value):
+
                 st.session_state["location_autocomplete"] = value
 
+            # --------------------------------------------------
             # MAIN TEXT SEARCH
+            # --------------------------------------------------
 
             st.subheader("🔎 Search Items")
 
             search_term = st.text_input(
-                "Enter an item name, description, or location",
+                "Enter item name, description, or location",
                 placeholder="Example: Black wallet, ID card...",
                 key="advanced_text_search"
             )
 
+            # --------------------------------------------------
             # FILTER SECTION
+            # --------------------------------------------------
 
             st.subheader("🎯 Filter Your Search")
 
             col1, col2 = st.columns(2)
-
-            # CATEGORY AUTOCOMPLETE
 
             category_options = [
                 "Wallet",
@@ -930,6 +1001,10 @@ elif selected_page == "🔍 Search Items":
                 "Other"
             ]
 
+            # --------------------------------------------------
+            # CATEGORY AUTOCOMPLETE
+            # --------------------------------------------------
+
             with col1:
 
                 category_query = st.text_input(
@@ -939,15 +1014,17 @@ elif selected_page == "🔍 Search Items":
                 )
 
                 category_matches = [
-                    category for category in category_options
-                    if category_query.strip().lower() in category.lower()
+                    category
+                    for category in category_options
+                    if category_query.strip().lower()
+                    in category.lower()
                 ]
 
                 if category_query.strip():
 
                     if category_matches:
 
-                        st.caption("Suggestions:")
+                        st.caption("Category suggestions:")
 
                         for category in category_matches:
 
@@ -963,7 +1040,9 @@ elif selected_page == "🔍 Search Items":
 
                         st.caption("No matching categories found.")
 
-            # LOCATION AUTOCOMPLETE
+            # --------------------------------------------------
+            # GET AVAILABLE LOCATIONS
+            # --------------------------------------------------
 
             locations = sorted(
                 set(
@@ -974,6 +1053,10 @@ elif selected_page == "🔍 Search Items":
                 key=str.lower
             )
 
+            # --------------------------------------------------
+            # LOCATION AUTOCOMPLETE
+            # --------------------------------------------------
+
             with col2:
 
                 location_query = st.text_input(
@@ -983,21 +1066,38 @@ elif selected_page == "🔍 Search Items":
                 )
 
                 location_matches = [
-                    location for location in locations
-                    if location_query.strip().lower() in location.lower()
+                    location
+                    for location in locations
+                    if location_query.strip().lower()
+                    in location.lower()
                 ]
+
+                # Also suggest known aliases
+
+                if location_query.strip():
+
+                    for group in LOCATION_ALIASES:
+
+                        for alias in group:
+
+                            if (
+                                location_query.strip().lower()
+                                in alias.lower()
+                                and alias not in location_matches
+                            ):
+                                location_matches.append(alias)
 
                 if location_query.strip():
 
                     if location_matches:
 
-                        st.caption("Suggestions:")
+                        st.caption("Location suggestions:")
 
-                        for location in location_matches:
+                        for index, location in enumerate(location_matches):
 
                             st.button(
                                 f"📍 {location}",
-                                key=f"location_suggestion_{location}",
+                                key=f"location_suggestion_{index}_{location}",
                                 on_click=choose_location,
                                 args=(location,),
                                 use_container_width=True
@@ -1007,21 +1107,21 @@ elif selected_page == "🔍 Search Items":
 
                         st.caption("No matching locations found.")
 
+            # --------------------------------------------------
             # GET SELECTED FILTER VALUES
+            # --------------------------------------------------
 
             selected_category = (
-                category_query
-                if category_query in category_options
+                category_query.strip()
+                if category_query.strip() in category_options
                 else "All Categories"
             )
 
-            selected_location = (
-                location_query
-                if location_query in locations
-                else "All Locations"
-            )
+            selected_location = location_query.strip()
 
+            # --------------------------------------------------
             # DATE FILTER
+            # --------------------------------------------------
 
             date_filter_available = any(
                 item.get("created_at")
@@ -1032,8 +1132,6 @@ elif selected_page == "🔍 Search Items":
             selected_end_date = None
 
             if date_filter_available:
-
-                import datetime
 
                 st.subheader("📅 Date Filter")
 
@@ -1057,7 +1155,9 @@ elif selected_page == "🔍 Search Items":
 
             st.divider()
 
-            # APPLY FILTERS
+            # --------------------------------------------------
+            # APPLY ALL FILTERS
+            # --------------------------------------------------
 
             filtered_items = []
 
@@ -1088,22 +1188,23 @@ elif selected_page == "🔍 Search Items":
                 ):
                     continue
 
-                # LOCATION FILTER
+                # SMART LOCATION FILTER
 
-                if (
-                    selected_location != "All Locations"
-                    and str(item.get("location", "")).strip()
-                    != selected_location
-                ):
-                    continue
+                if selected_location:
+
+                    item_location = item.get("location", "")
+
+                    if not locations_match(
+                        item_location,
+                        selected_location
+                    ):
+                        continue
 
                 # DATE FILTER
 
                 if date_filter_available and (
                     selected_start_date or selected_end_date
                 ):
-
-                    import datetime
 
                     created_value = item.get("created_at")
 
@@ -1133,7 +1234,9 @@ elif selected_page == "🔍 Search Items":
 
                 filtered_items.append(item)
 
-            # DISPLAY RESULTS
+            # --------------------------------------------------
+            # DISPLAY SEARCH RESULTS
+            # --------------------------------------------------
 
             st.subheader("🔎 Search Results")
 
@@ -1206,6 +1309,7 @@ elif selected_page == "🔍 Search Items":
         st.code(str(error))
 
     st.divider()
+
 
 # --------------------------------------------------
 # 9. DISPLAY ALL FOUND ITEMS
