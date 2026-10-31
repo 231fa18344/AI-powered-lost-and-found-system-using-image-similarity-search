@@ -344,12 +344,21 @@ elif selected_page == "📤 Share":
         mime="image/png"
     )
 # --------------------------------------------------
-# 6. REPORT A FOUND ITEM PAGE
+# 6. REPORT A FOUND ITEM
 # --------------------------------------------------
 
 elif selected_page == "📦 Report Item":
 
+    st.title("🔎 FindIt AI")
+
     st.header("📦 Report a Found Item")
+
+    st.write(
+        "Found something on campus? "
+        "Report it here to help its owner find it."
+    )
+
+    st.divider()
 
     with st.form("report_item_form"):
 
@@ -380,7 +389,7 @@ elif selected_page == "📦 Report Item":
         )
 
         submit_item = st.form_submit_button(
-            "Submit Found Item"
+            "📦 Submit Found Item"
         )
 
     if submit_item:
@@ -391,44 +400,63 @@ elif selected_page == "📦 Report Item":
             and location.strip()
         ):
 
-            image_path = None
+            try:
 
-            if uploaded_image is not None:
+                image_path = None
 
-                extension = os.path.splitext(
-                    uploaded_image.name
-                )[1].lower()
+                # Upload image to Supabase Storage
+                if uploaded_image is not None:
 
-                image_filename = (
-                    f"{uuid.uuid4().hex}{extension}"
+                    extension = os.path.splitext(
+                        uploaded_image.name
+                    )[1].lower()
+
+                    image_filename = (
+                        f"{uuid.uuid4().hex}{extension}"
+                    )
+
+                    image_bytes = uploaded_image.getvalue()
+
+                    supabase.storage.from_(
+                        "item-images"
+                    ).upload(
+                        path=image_filename,
+                        file=image_bytes,
+                        file_options={
+                            "content-type": uploaded_image.type,
+                            "upsert": "false"
+                        }
+                    )
+
+                    image_path = supabase.storage.from_(
+                        "item-images"
+                    ).get_public_url(image_filename)
+
+                # Save item details in Supabase
+                supabase.table("found_items").insert({
+                    "item_name": item_name.strip(),
+                    "description": description.strip(),
+                    "location": location.strip(),
+                    "image_path": image_path
+                }).execute()
+
+                st.success(
+                    "✅ Found item submitted successfully!"
                 )
 
-                image_bytes = uploaded_image.getvalue()
+                st.balloons()
 
-                supabase.storage.from_("item-images").upload(
-                    path=image_filename,
-                    file=image_bytes,
-                    file_options={
-                        "content-type": uploaded_image.type,
-                        "upsert": "false"
-                    }
+            except Exception as e:
+
+                st.error(
+                    f"Unable to submit the item: {e}"
                 )
-
-                image_path = supabase.storage.from_(
-                    "item-images"
-                ).get_public_url(image_filename)
-
-            supabase.table("found_items").insert({
-                "item_name": item_name.strip(),
-                "description": description.strip(),
-                "location": location.strip(),
-                "image_path": image_path
-            }).execute()
-
-            st.success("Found item submitted successfully!")
 
         else:
-            st.error("Please fill in all required fields.")---------------------
+
+            st.error(
+                "Please fill in all required fields."
+            )
 # 7. AI Image Search
 # --------------------------------------------------
 
