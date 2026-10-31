@@ -821,14 +821,14 @@ elif selected_page == "🤖 AI Image Search":
 
 
 
+
 # --------------------------------------------------
-# 8. ADVANCED TEXT SEARCH AND FILTERS
+# 8. ADVANCED TEXT SEARCH AND AUTOCOMPLETE FILTERS
 # --------------------------------------------------
 
 elif selected_page == "🔍 Search Items":
 
     st.title("🔎 FindIt AI")
-
     st.header("🔍 Advanced Item Search")
 
     st.write(
@@ -894,7 +894,15 @@ elif selected_page == "🔍 Search Items":
                 else:
                     return "Other"
 
-            # TEXT SEARCH
+            # AUTOCOMPLETE SELECTION CALLBACKS
+
+            def choose_category(value):
+                st.session_state["category_autocomplete"] = value
+
+            def choose_location(value):
+                st.session_state["location_autocomplete"] = value
+
+            # MAIN TEXT SEARCH
 
             st.subheader("🔎 Search Items")
 
@@ -904,58 +912,114 @@ elif selected_page == "🔍 Search Items":
                 key="advanced_text_search"
             )
 
-            # FILTER OPTIONS
+            # FILTER SECTION
 
             st.subheader("🎯 Filter Your Search")
 
             col1, col2 = st.columns(2)
 
-            # CATEGORY SEARCHABLE DROPDOWN
+            # CATEGORY AUTOCOMPLETE
+
+            category_options = [
+                "Wallet",
+                "ID Card",
+                "Keys",
+                "Bags",
+                "Earphones",
+                "Mobile Phones",
+                "Other"
+            ]
 
             with col1:
 
-                category_options = [
-                    "All Categories",
-                    "Wallet",
-                    "ID Card",
-                    "Keys",
-                    "Bags",
-                    "Earphones",
-                    "Mobile Phones",
-                    "Other"
-                ]
-
-                selected_category = st.selectbox(
-                    "📦 Select Category",
-                    options=category_options,
-                    index=0,
-                    key="search_category_filter",
-                    help="Type inside the dropdown to search categories."
+                category_query = st.text_input(
+                    "📦 Search Category",
+                    placeholder="Type category name...",
+                    key="category_autocomplete"
                 )
 
-            # LOCATION SEARCHABLE DROPDOWN
+                category_matches = [
+                    category for category in category_options
+                    if category_query.strip().lower() in category.lower()
+                ]
+
+                if category_query.strip():
+
+                    if category_matches:
+
+                        st.caption("Suggestions:")
+
+                        for category in category_matches:
+
+                            st.button(
+                                f"📦 {category}",
+                                key=f"category_suggestion_{category}",
+                                on_click=choose_category,
+                                args=(category,),
+                                use_container_width=True
+                            )
+
+                    else:
+
+                        st.caption("No matching categories found.")
+
+            # LOCATION AUTOCOMPLETE
+
+            locations = sorted(
+                set(
+                    str(item.get("location", "")).strip()
+                    for item in all_search_items
+                    if item.get("location")
+                ),
+                key=str.lower
+            )
 
             with col2:
 
-                locations = sorted(
-                    set(
-                        str(item.get("location", "")).strip()
-                        for item in all_search_items
-                        if item.get("location")
-                    )
+                location_query = st.text_input(
+                    "📍 Search Location",
+                    placeholder="Type location name...",
+                    key="location_autocomplete"
                 )
 
-                location_options = [
-                    "All Locations"
-                ] + locations
+                location_matches = [
+                    location for location in locations
+                    if location_query.strip().lower() in location.lower()
+                ]
 
-                selected_location = st.selectbox(
-                    "📍 Select Location",
-                    options=location_options,
-                    index=0,
-                    key="search_location_filter",
-                    help="Type inside the dropdown to search locations."
-                )
+                if location_query.strip():
+
+                    if location_matches:
+
+                        st.caption("Suggestions:")
+
+                        for location in location_matches:
+
+                            st.button(
+                                f"📍 {location}",
+                                key=f"location_suggestion_{location}",
+                                on_click=choose_location,
+                                args=(location,),
+                                use_container_width=True
+                            )
+
+                    else:
+
+                        st.caption("No matching locations found.")
+
+            # GET SELECTED FILTER VALUES
+
+            selected_category = (
+                category_query
+                if category_query in category_options
+                else "All Categories"
+            )
+
+            selected_location = (
+                location_query
+                if location_query in locations
+                else "All Locations"
+            )
 
             # DATE FILTER
 
@@ -990,14 +1054,6 @@ elif selected_page == "🔍 Search Items":
                         value=None,
                         key="search_end_date"
                     )
-
-            else:
-
-                st.caption(
-                    "Date filtering is unavailable because "
-                    "the found_items records do not contain "
-                    "a created_at date."
-                )
 
             st.divider()
 
@@ -1147,11 +1203,9 @@ elif selected_page == "🔍 Search Items":
     except Exception as error:
 
         st.error("Unable to search found items.")
-
         st.code(str(error))
 
     st.divider()
-
 
 # --------------------------------------------------
 # 9. DISPLAY ALL FOUND ITEMS
