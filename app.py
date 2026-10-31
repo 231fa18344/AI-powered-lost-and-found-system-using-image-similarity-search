@@ -344,112 +344,91 @@ elif selected_page == "📤 Share":
         mime="image/png"
     )
 # --------------------------------------------------
-# 6. Report a Found Item
+# 6. REPORT A FOUND ITEM PAGE
 # --------------------------------------------------
 
-st.header("📦 Report a Found Item")
+elif selected_page == "📦 Report Item":
 
-with st.form("report_item_form"):
+    st.header("📦 Report a Found Item")
 
-    uploaded_image = st.file_uploader(
-        "Upload a photo of the found item",
-        type=["jpg", "jpeg", "png"],
-        key="report_image"
-    )   
-    camera_image = st.camera_input(
-        "Or take a photo using your camera",
-        key="report_camera"
-    )
+    with st.form("report_item_form"):
 
-    if camera_image is not None:
-        uploaded_image = camera_image
-    
+        uploaded_image = st.file_uploader(
+            "Upload a photo of the found item",
+            type=["jpg", "jpeg", "png"],
+            key="report_image"
+        )
 
-    item_name = st.text_input(
-        "What item did you find?"
-    )
+        camera_image = st.camera_input(
+            "Or take a photo using your camera",
+            key="report_camera"
+        )
 
-    description = st.text_area(
-        "Describe the item"
-    )
+        if camera_image is not None:
+            uploaded_image = camera_image
 
-    location = st.text_input(
-        "Where did you find it?"
-    )
+        item_name = st.text_input(
+            "What item did you find?"
+        )
 
-    submit_item = st.form_submit_button(
-        "Submit Found Item"
-    )
+        description = st.text_area(
+            "Describe the item"
+        )
 
+        location = st.text_input(
+            "Where did you find it?"
+        )
 
-if submit_item:
+        submit_item = st.form_submit_button(
+            "Submit Found Item"
+        )
 
-    if (
-        item_name.strip()
-        and description.strip()
-        and location.strip()
-    ):
+    if submit_item:
 
-        image_path = None
+        if (
+            item_name.strip()
+            and description.strip()
+            and location.strip()
+        ):
 
-        if uploaded_image is not None:
+            image_path = None
 
-            extension = os.path.splitext(
-                uploaded_image.name
-            )[1].lower()
+            if uploaded_image is not None:
 
-            image_filename = (
-                f"{uuid.uuid4().hex}{extension}"
-            )
+                extension = os.path.splitext(
+                    uploaded_image.name
+                )[1].lower()
 
-            image_bytes = uploaded_image.getvalue()
+                image_filename = (
+                    f"{uuid.uuid4().hex}{extension}"
+                )
 
-            supabase.storage.from_("item-images").upload(
-                path=image_filename,
-                file=image_bytes,
-                file_options={
-                    "content-type": uploaded_image.type,
-                    "upsert": "false"
-                }
-            )
+                image_bytes = uploaded_image.getvalue()
 
-            image_path = supabase.storage.from_("item-images").get_public_url(
-                image_filename
-            )
+                supabase.storage.from_("item-images").upload(
+                    path=image_filename,
+                    file=image_bytes,
+                    file_options={
+                        "content-type": uploaded_image.type,
+                        "upsert": "false"
+                    }
+                )
 
-        supabase.table("found_items").insert({
-            "item_name": item_name.strip(),
-            "description": description.strip(),
-            "location": location.strip(),
-            "image_path": image_path
-        }).execute()
+                image_path = supabase.storage.from_(
+                    "item-images"
+                ).get_public_url(image_filename)
 
-        st.success("Found item submitted successfully!")
+            supabase.table("found_items").insert({
+                "item_name": item_name.strip(),
+                "description": description.strip(),
+                "location": location.strip(),
+                "image_path": image_path
+            }).execute()
 
-    else:
-        st.error("Please fill in all required fields.")
-        
-# Create a table to store item claims
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS claims (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_id INTEGER NOT NULL,
-        claimant_name TEXT NOT NULL,
-        contact TEXT NOT NULL,
-        ownership_proof TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'Pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (item_id) REFERENCES found_items(id)
-    )
-""")
+            st.success("Found item submitted successfully!")
 
-connection.commit()
-
-st.success("Found item saved successfully!")
-
-
-st.divider()
-# --------------------------------------------------
+        else:
+            st.error("Please fill in all required fields.")---------------------
 # 7. AI Image Search
 # --------------------------------------------------
 
