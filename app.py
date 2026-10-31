@@ -457,115 +457,173 @@ elif selected_page == "📦 Report Item":
             st.error(
                 "Please fill in all required fields."
             )
-# 7. AI Image Search
+# --------------------------------------------------
+# 7. AI IMAGE SEARCH
 # --------------------------------------------------
 
-st.header("🔎 Search Found Items Using AI")
+elif selected_page == "🤖 AI Image Search":
 
-ai_search_image = st.file_uploader(
-    "Upload an image to find similar items",
-    type=["jpg", "jpeg", "png"],
-    key="ai_search_image"
-)
+    st.title("🔎 FindIt AI")
 
-camera_search_image = st.camera_input(
-    "Or take a photo to search for similar items",
-    key="camera_search_image"
-)
+    st.header("🤖 Search Found Items Using AI")
 
-if camera_search_image is not None:
-    ai_search_image = camera_search_image
+    st.write(
+        "Upload an image or take a photo to find "
+        "visually similar items."
+    )
 
-if ai_search_image is not None:
+    st.divider()
 
-    try:
-        query_image = Image.open(
-            ai_search_image
-        ).convert("RGB")
+    ai_search_image = st.file_uploader(
+        "Upload an image to find similar items",
+        type=["jpg", "jpeg", "png"],
+        key="ai_search_image"
+    )
 
-        st.write("**Your uploaded search image:**")
-        st.image(query_image, width=220)
+    camera_search_image = st.camera_input(
+        "Or take a photo to search for similar items",
+        key="camera_search_image"
+    )
 
-        response = (
-            supabase.table("found_items")
-            .select("*")
-            .not_.is_("image_path", "null")
-            .order("id", desc=True)
-            .execute()
-        )
+    if camera_search_image is not None:
+        ai_search_image = camera_search_image
 
-        database_items = response.data
-        image_items = []
+    if ai_search_image is not None:
 
-        import requests
-        from io import BytesIO
+        try:
 
-        for item in database_items:
+            query_image = Image.open(
+                ai_search_image
+            ).convert("RGB")
 
-            saved_url = item.get("image_path")
+            st.write("**Your uploaded search image:**")
 
-            if saved_url and saved_url.startswith("https://"):
-
-                try:
-                    image_response = requests.get(
-                        saved_url,
-                        timeout=15
-                    )
-                    image_response.raise_for_status()
-
-                    saved_image = Image.open(
-                        BytesIO(image_response.content)
-                    ).convert("RGB")
-
-                    image_items.append(
-                        (item, saved_image)
-                    )
-
-                except Exception:
-                    continue
-
-        if not image_items:
-
-            st.info(
-                "No readable photos found in Supabase Storage. "
-                "Please report a found item with a photo first."
+            st.image(
+                query_image,
+                width=220
             )
 
-        else:
+            response = (
+                supabase.table("found_items")
+                .select("*")
+                .not_.is_("image_path", "null")
+                .order("id", desc=True)
+                .execute()
+            )
 
-            with st.spinner("AI is comparing the images..."):
+            database_items = response.data
 
-                ranked = find_similar_items(
-                    query_image,
-                    image_items
-                )
+            image_items = []
 
-            st.subheader("🤖 AI Image Matches")
+            import requests
+            from io import BytesIO
 
-            for (item, saved_image), score in ranked:
+            for item in database_items:
 
-                with st.container(border=True):
+                saved_url = item.get("image_path")
 
-                    col1, col2 = st.columns([1, 2])
+                if (
+                    saved_url
+                    and saved_url.startswith("https://")
+                ):
 
-                    with col1:
-                        st.image(saved_image, width=220)
+                    try:
 
-                    with col2:
-                        st.write(f"**Item:** {item.get('item_name', '')}")
-                        st.write(f"**Description:** {item.get('description', '')}")
-                        st.write(f"**Location:** {item.get('location', '')}")
-                        st.write(
-                            f"**Image similarity score:** "
-                            f"{score * 100:.2f}%"
+                        image_response = requests.get(
+                            saved_url,
+                            timeout=15
                         )
 
-    except Exception as error:
-        st.error(f"Unable to process the image: {error}")
+                        image_response.raise_for_status()
 
-st.divider()
+                        saved_image = Image.open(
+                            BytesIO(image_response.content)
+                        ).convert("RGB")
 
+                        image_items.append(
+                            (item, saved_image)
+                        )
 
+                    except Exception:
+                        continue
+
+            if not image_items:
+
+                st.info(
+                    "No readable photos found in Supabase Storage. "
+                    "Please report a found item with a photo first."
+                )
+
+            else:
+
+                with st.spinner(
+                    "🤖 AI is comparing the images..."
+                ):
+
+                    ranked = find_similar_items(
+                        query_image,
+                        image_items
+                    )
+
+                st.subheader("🤖 AI Image Matches")
+
+                if not ranked:
+
+                    st.info(
+                        "No similar items found."
+                    )
+
+                else:
+
+                    for (item, saved_image), score in ranked:
+
+                        with st.container(border=True):
+
+                            col1, col2 = st.columns([1, 2])
+
+                            with col1:
+
+                                st.image(
+                                    saved_image,
+                                    width=220
+                                )
+
+                            with col2:
+
+                                st.write(
+                                    f"**Item:** "
+                                    f"{item.get('item_name', '')}"
+                                )
+
+                                st.write(
+                                    f"**Description:** "
+                                    f"{item.get('description', '')}"
+                                )
+
+                                st.write(
+                                    f"**Location:** "
+                                    f"{item.get('location', '')}"
+                                )
+
+                                st.write(
+                                    f"**Image similarity score:** "
+                                    f"{score * 100:.2f}%"
+                                )
+
+        except Exception as error:
+
+            st.error(
+                f"Unable to process the image: {error}"
+            )
+
+    else:
+
+        st.info(
+            "Please upload an image or take a photo "
+            "to start AI image search."
+        )
+
+    st.divider()
 # --------------------------------------------------
 # 8. Text Search
 # --------------------------------------------------
