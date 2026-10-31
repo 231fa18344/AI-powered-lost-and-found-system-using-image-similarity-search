@@ -820,6 +820,7 @@ elif selected_page == "🤖 AI Image Search":
     st.divider()
 
 
+
 # --------------------------------------------------
 # 8. ADVANCED TEXT SEARCH AND FILTERS
 # --------------------------------------------------
@@ -893,12 +894,12 @@ elif selected_page == "🔍 Search Items":
                 else:
                     return "Other"
 
-            # SEARCH INPUT
+            # TEXT SEARCH
 
             st.subheader("🔎 Search Items")
 
             search_term = st.text_input(
-                "Enter item name, description, or location",
+                "Enter an item name, description, or location",
                 placeholder="Example: Black wallet, ID card...",
                 key="advanced_text_search"
             )
@@ -909,17 +910,9 @@ elif selected_page == "🔍 Search Items":
 
             col1, col2 = st.columns(2)
 
-            # CATEGORY SEARCH AND FILTER
+            # CATEGORY SEARCHABLE DROPDOWN
 
             with col1:
-
-                st.markdown("**📦 Search Category**")
-
-                category_search = st.text_input(
-                    "Find a category",
-                    placeholder="Type category name...",
-                    key="category_search"
-                ).strip().lower()
 
                 category_options = [
                     "All Categories",
@@ -932,33 +925,17 @@ elif selected_page == "🔍 Search Items":
                     "Other"
                 ]
 
-                filtered_categories = [
-                    category
-                    for category in category_options
-                    if category_search in category.lower()
-                ]
-
-                if not filtered_categories:
-                    st.caption("No matching category found.")
-                    filtered_categories = ["All Categories"]
-
                 selected_category = st.selectbox(
-                    "Select Category",
-                    filtered_categories,
-                    key="search_category_filter"
+                    "📦 Select Category",
+                    options=category_options,
+                    index=0,
+                    key="search_category_filter",
+                    help="Type inside the dropdown to search categories."
                 )
 
-            # LOCATION SEARCH AND FILTER
+            # LOCATION SEARCHABLE DROPDOWN
 
             with col2:
-
-                st.markdown("**📍 Search Location**")
-
-                location_search = st.text_input(
-                    "Find a location",
-                    placeholder="Type location name...",
-                    key="location_search"
-                ).strip().lower()
 
                 locations = sorted(
                     set(
@@ -970,16 +947,14 @@ elif selected_page == "🔍 Search Items":
 
                 location_options = [
                     "All Locations"
-                ] + [
-                    location
-                    for location in locations
-                    if location_search in location.lower()
-                ]
+                ] + locations
 
                 selected_location = st.selectbox(
-                    "Select Location",
-                    location_options,
-                    key="search_location_filter"
+                    "📍 Select Location",
+                    options=location_options,
+                    index=0,
+                    key="search_location_filter",
+                    help="Type inside the dropdown to search locations."
                 )
 
             # DATE FILTER
@@ -1176,6 +1151,7 @@ elif selected_page == "🔍 Search Items":
         st.code(str(error))
 
     st.divider()
+
 
 # --------------------------------------------------
 # 9. DISPLAY ALL FOUND ITEMS
