@@ -625,68 +625,119 @@ elif selected_page == "🤖 AI Image Search":
 
     st.divider()
 # --------------------------------------------------
-# 8. Text Search
+# 8. TEXT SEARCH
 # --------------------------------------------------
 
+elif selected_page == "🔍 Search Items":
 
-st.header("🔍 Search by Item Name or Description")
+    st.title("🔎 FindIt AI")
 
-search_term = st.text_input(
-    "Enter an item name, description, or location",
-    key="text_search"
-)
+    st.header("🔍 Search by Item Name or Description")
 
-if search_term.strip():
+    st.write(
+        "Find found items using their name, "
+        "description, or location."
+    )
 
-    try:
-        term = search_term.strip()
+    st.divider()
 
-        response = (
-            supabase.table("found_items")
-            .select("*")
-            .or_(
-                f"item_name.ilike.%{term}%,"
-                f"description.ilike.%{term}%,"
-                f"location.ilike.%{term}%"
+    # Search input
+    search_term = st.text_input(
+        "Enter an item name, description, or location",
+        key="text_search"
+    )
+
+    # Search database
+    if search_term.strip():
+
+        try:
+
+            term = search_term.strip()
+
+            response = (
+                supabase.table("found_items")
+                .select("*")
+                .or_(
+                    f"item_name.ilike.%{term}%,"
+                    f"description.ilike.%{term}%,"
+                    f"location.ilike.%{term}%"
+                )
+                .order("id", desc=True)
+                .execute()
             )
-            .order("id", desc=True)
-            .execute()
+
+            search_results = response.data
+
+            # Display matching results
+            if search_results:
+
+                st.subheader("🔎 Search Results")
+
+                st.success(
+                    f"{len(search_results)} matching item(s) found!"
+                )
+
+                for item in search_results:
+
+                    with st.container(border=True):
+
+                        col1, col2 = st.columns([1, 2])
+
+                        with col1:
+
+                            image_path = item.get("image_path")
+
+                            if image_path:
+
+                                st.image(
+                                    image_path,
+                                    width=220
+                                )
+
+                            else:
+
+                                st.info(
+                                    "No image available"
+                                )
+
+                        with col2:
+
+                            st.write(
+                                f"**Item:** "
+                                f"{item.get('item_name', '')}"
+                            )
+
+                            st.write(
+                                f"**Description:** "
+                                f"{item.get('description', '')}"
+                            )
+
+                            st.write(
+                                f"**Location:** "
+                                f"{item.get('location', '')}"
+                            )
+
+            else:
+
+                st.info(
+                    "No matching items found. "
+                    "Try another search."
+                )
+
+        except Exception as error:
+
+            st.error(
+                f"Search failed: {error}"
+            )
+
+    else:
+
+        st.info(
+            "Enter an item name, description, "
+            "or location to search."
         )
 
-        search_results = response.data
-
-        if search_results:
-
-            for item in search_results:
-
-                with st.container(border=True):
-
-                    st.write(
-                        f"**Item:** {item.get('item_name', '')}"
-                    )
-
-                    st.write(
-                        f"**Description:** {item.get('description', '')}"
-                    )
-
-                    st.write(
-                        f"**Location:** {item.get('location', '')}"
-                    )
-
-                    image_path = item.get("image_path")
-
-                    if image_path:
-                        st.image(image_path, width=220)
-
-        else:
-            st.info(
-                "No matching items found. Try another search."
-            )
-
-    except Exception as error:
-        st.error(f"Search failed: {error}")
-
-st.divider()
+    st.divider()
 # --------------------------------------------------
 # 9. Display All Found Items
 # --------------------------------------------------
