@@ -829,116 +829,117 @@ elif selected_page == "📋 All Found Items":
 # 10. Safe Item Recovery Request
 # --------------------------------------------------
 
-st.header("🤝 Request Item Recovery")
+elif selected_page == "📩 Recovery Requests":
 
-try:
-    # Load found items from Supabase
-    response = (
-        supabase.table("found_items")
-        .select("id, item_name, description, location")
-        .order("id", desc=True)
-        .execute()
-    )
+    st.title("🔎 FindIt AI")
+    st.header("🤝 Request Item Recovery")
 
-    recovery_items = response.data or []
-
-    if not recovery_items:
-        st.info("No found items are available to request.")
-
-    else:
-        # Prepare item choices
-        item_options = {
-            (
-                f"{item.get('item_name') or 'Unknown item'} - "
-                f"{item.get('location') or 'Location not specified'} "
-                f"(ID: {item['id']})"
-            ): item["id"]
-            for item in recovery_items
-        }
-
-        selected_item = st.selectbox(
-            "Select the item you want to recover",
-            options=list(item_options.keys()),
-            key="recovery_item_select"
+    try:
+        # Load found items from Supabase
+        response = (
+            supabase.table("found_items")
+            .select("id, item_name, description, location")
+            .order("id", desc=True)
+            .execute()
         )
 
-        st.write(
-            "Enter your details to request recovery of this item."
-        )
+        recovery_items = response.data or []
 
-        with st.form("recovery_request_form"):
+        if not recovery_items:
+            st.info("No found items are available to request.")
 
-            requester_name = st.text_input(
-                "Your name",
-                max_chars=100
+        else:
+            # Prepare item choices
+            item_options = {
+                (
+                    f"{item.get('item_name') or 'Unknown item'} - "
+                    f"{item.get('location') or 'Location not specified'} "
+                    f"(ID: {item['id']})"
+                ): item["id"]
+                for item in recovery_items
+            }
+
+            selected_item = st.selectbox(
+                "Select the item you want to recover",
+                options=list(item_options.keys()),
+                key="recovery_item_select"
             )
 
-            requester_contact = st.text_input(
-                "Your contact (email or phone)",
-                max_chars=200
+            st.write(
+                "Enter your details to request recovery of this item."
             )
 
-            message = st.text_area(
-                "Explain why you think this item belongs to you",
-                max_chars=1000,
-                placeholder=(
-                    "Example: I lost my wallet near the classroom. "
-                    "I can describe its contents to verify ownership."
+            with st.form("recovery_request_form"):
+
+                requester_name = st.text_input(
+                    "Your name",
+                    max_chars=100
                 )
-            )
 
-            st.caption(
-                "Do not include passwords, OTPs, or sensitive ID numbers."
-            )
+                requester_contact = st.text_input(
+                    "Your contact (email or phone)",
+                    max_chars=200
+                )
 
-            submitted = st.form_submit_button(
-                "Submit Recovery Request"
-            )
-
-        if submitted:
-
-            if not requester_name.strip():
-                st.warning("Please enter your name.")
-
-            elif not requester_contact.strip():
-                st.warning("Please enter your contact details.")
-
-            elif not message.strip():
-                st.warning("Please explain your recovery request.")
-
-            else:
-                try:
-                    # Submit request without returning row data
-                    supabase.table("recovery_requests").insert(
-                        {
-                            "item_id": item_options[selected_item],
-                            "requester_name": requester_name.strip(),
-                            "requester_contact": requester_contact.strip(),
-                            "message": message.strip()
-                        },
-                        returning="minimal"
-                    ).execute()
-
-                    st.success(
-                        "Recovery request submitted successfully!"
+                message = st.text_area(
+                    "Explain why you think this item belongs to you",
+                    max_chars=1000,
+                    placeholder=(
+                        "Example: I lost my wallet near the classroom. "
+                        "I can describe its contents to verify ownership."
                     )
+                )
 
-                    st.info(
-                        "Your request has been saved. "
-                        "The finder has not been automatically notified."
-                    )
+                st.caption(
+                    "Do not include passwords, OTPs, or sensitive ID numbers."
+                )
 
-                except Exception as submit_error:
-                    st.error("Unable to submit recovery request.")
-                    st.code(str(submit_error))
+                submitted = st.form_submit_button(
+                    "Submit Recovery Request"
+                )
 
-except Exception as error:
-    st.error("Unable to load the recovery form.")
-    st.code(str(error))
+            if submitted:
 
-st.divider()
+                if not requester_name.strip():
+                    st.warning("Please enter your name.")
 
+                elif not requester_contact.strip():
+                    st.warning("Please enter your contact details.")
 
+                elif not message.strip():
+                    st.warning("Please explain your recovery request.")
+
+                else:
+                    try:
+                        # Submit request without returning row data
+                        supabase.table("recovery_requests").insert(
+                            {
+                                "item_id": item_options[selected_item],
+                                "requester_name": requester_name.strip(),
+                                "requester_contact": requester_contact.strip(),
+                                "message": message.strip()
+                            },
+                            returning="minimal"
+                        ).execute()
+
+                        st.success(
+                            "Recovery request submitted successfully!"
+                        )
+
+                        st.info(
+                            "Your request has been saved. "
+                            "The finder has not been automatically notified."
+                        )
+
+                    except Exception as submit_error:
+                        st.error("Unable to submit recovery request.")
+                        st.code(str(submit_error))
+
+    except Exception as error:
+        st.error("Unable to load the recovery form.")
+        st.code(str(error))
+
+    st.divider()
 
 
 # --------------------------------------------------
@@ -1383,3 +1384,4 @@ elif selected_page == "🔐 Admin":
 # --------------------------------------------------
 
 connection.close()
+
