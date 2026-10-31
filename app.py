@@ -818,60 +818,265 @@ elif selected_page == "🤖 AI Image Search":
         )
 
     st.divider()
+
 # --------------------------------------------------
-# 8. TEXT SEARCH
+# 8. ADVANCED TEXT SEARCH AND FILTERS
 # --------------------------------------------------
 
 elif selected_page == "🔍 Search Items":
 
     st.title("🔎 FindIt AI")
 
-    st.header("🔍 Search by Item Name or Description")
+    st.header("🔍 Advanced Item Search")
 
     st.write(
-        "Find found items using their name, "
-        "description, or location."
+        "Search for lost belongings using item name, "
+        "description, or location. Use filters to find "
+        "the items more easily."
     )
 
     st.divider()
 
-    # Search input
-    search_term = st.text_input(
-        "Enter an item name, description, or location",
-        key="text_search"
-    )
+    try:
 
-    # Search database
-    if search_term.strip():
+        # LOAD ALL FOUND ITEMS
 
-        try:
+        response = (
+            supabase.table("found_items")
+            .select("*")
+            .order("id", desc=True)
+            .execute()
+        )
 
-            term = search_term.strip()
+        all_search_items = response.data or []
 
-            response = (
-                supabase.table("found_items")
-                .select("*")
-                .or_(
-                    f"item_name.ilike.%{term}%,"
-                    f"description.ilike.%{term}%,"
-                    f"location.ilike.%{term}%"
-                )
-                .order("id", desc=True)
-                .execute()
+        if not all_search_items:
+
+            st.info("No found items are available yet.")
+
+        else:
+
+            # CATEGORY DETECTION
+
+            def get_item_category(item):
+
+                item_text = (
+                    str(item.get("item_name", "")) + " " +
+                    str(item.get("description", ""))
+                ).lower()
+
+                if any(word in item_text for word in
+                       ["wallet", "purse"]):
+                    return "Wallet"
+
+                elif any(word in item_text for word in
+                         ["id card", "identity card", "college card"]):
+                    return "ID Card"
+
+                elif any(word in item_text for word in
+                         ["key", "keys"]):
+                    return "Keys"
+
+                elif any(word in item_text for word in
+                         ["bag", "backpack", "school bag"]):
+                    return "Bags"
+
+                elif any(word in item_text for word in
+                         ["earphone", "headphone", "airpod"]):
+                    return "Earphones"
+
+                elif any(word in item_text for word in
+                         ["mobile", "phone", "smartphone"]):
+                    return "Mobile Phones"
+
+                else:
+                    return "Other"
+
+            # SEARCH INPUT
+
+            st.subheader("🔎 Search Items")
+
+            search_term = st.text_input(
+                "Enter item name, description, or location",
+                key="advanced_text_search"
             )
 
-            search_results = response.data
+            # FILTER OPTIONS
 
-            # Display matching results
-            if search_results:
+            st.subheader("🎯 Filter Your Search")
 
-                st.subheader("🔎 Search Results")
+            col1, col2 = st.columns(2)
 
-                st.success(
-                    f"{len(search_results)} matching item(s) found!"
+            with col1:
+
+                category_options = [
+                    "All Categories",
+                    "Wallet",
+                    "ID Card",
+                    "Keys",
+                    "Bags",
+                    "Earphones",
+                    "Mobile Phones",
+                    "Other"
+                ]
+
+                selected_category = st.selectbox(
+                    "📦 Select Category",
+                    category_options,
+                    key="search_category_filter"
                 )
 
-                for item in search_results:
+            with col2:
+
+                locations = sorted(
+                    set(
+                        str(item.get("location", "")).strip()
+                        for item in all_search_items
+                        if item.get("location")
+                    )
+                )
+
+                location_options = [
+                    "All Locations"
+                ] + locations
+
+                selected_location = st.selectbox(
+                    "📍 Select Location",
+                    location_options,
+                    key="search_location_filter"
+                )
+
+            # DATE FILTER - ONLY IF created_at EXISTS
+
+            date_filter_available = any(
+                item.get("created_at")
+                for item in all_search_items
+            )
+
+            selected_start_date = None
+            selected_end_date = None
+
+            if date_filter_available:
+
+                import datetime
+
+                st.subheader("📅 Date Filter")
+
+                date_col1, date_col2 = st.columns(2)
+
+                with date_col1:
+
+                    selected_start_date = st.date_input(
+                        "From Date",
+                        value=None,
+                        key="search_start_date"
+                    )
+
+                with date_col2:
+
+                    selected_end_date = st.date_input(
+                        "To Date",
+                        value=None,
+                        key="search_end_date"
+                    )
+
+            else:
+
+                st.caption(
+                    "Date filtering is unavailable because "
+                    "the found_items records do not contain "
+                    "a created_at date."
+                )
+
+            st.divider()
+
+            # APPLY FILTERS
+
+            filtered_items = []
+
+            for item in all_search_items:
+
+                # TEXT SEARCH
+
+                if search_term.strip():
+
+                    term = search_term.strip().lower()
+
+                    searchable_text = (
+                        str(item.get("item_name", "")) + " " +
+                        str(item.get("description", "")) + " " +
+                        str(item.get("location", ""))
+                    ).lower()
+
+                    if term not in searchable_text:
+                        continue
+
+                # CATEGORY FILTER
+
+                item_category = get_item_category(item)
+
+                if (
+                    selected_category != "All Categories"
+                    and item_category != selected_category
+                ):
+                    continue
+
+                # LOCATION FILTER
+
+                if (
+                    selected_location != "All Locations"
+                    and str(item.get("location", "")).strip()
+                    != selected_location
+                ):
+                    continue
+
+                # DATE FILTER
+
+                if date_filter_available and (
+                    selected_start_date or selected_end_date
+                ):
+
+                    import datetime
+
+                    created_value = item.get("created_at")
+
+                    if not created_value:
+                        continue
+
+                    try:
+
+                        created_date = datetime.datetime.fromisoformat(
+                            str(created_value).replace("Z", "+00:00")
+                        ).date()
+
+                        if (
+                            selected_start_date
+                            and created_date < selected_start_date
+                        ):
+                            continue
+
+                        if (
+                            selected_end_date
+                            and created_date > selected_end_date
+                        ):
+                            continue
+
+                    except (ValueError, TypeError):
+                        continue
+
+                filtered_items.append(item)
+
+            # DISPLAY RESULTS
+
+            st.subheader("🔎 Search Results")
+
+            if filtered_items:
+
+                st.success(
+                    f"{len(filtered_items)} matching item(s) found!"
+                )
+
+                for item in filtered_items:
 
                     with st.container(border=True):
 
@@ -890,15 +1095,18 @@ elif selected_page == "🔍 Search Items":
 
                             else:
 
-                                st.info(
-                                    "No image available"
-                                )
+                                st.info("No image available")
 
                         with col2:
 
                             st.write(
                                 f"**Item:** "
                                 f"{item.get('item_name', '')}"
+                            )
+
+                            st.write(
+                                f"**Category:** "
+                                f"{get_item_category(item)}"
                             )
 
                             st.write(
@@ -911,27 +1119,28 @@ elif selected_page == "🔍 Search Items":
                                 f"{item.get('location', '')}"
                             )
 
+                            if item.get("created_at"):
+
+                                st.write(
+                                    f"**Date Added:** "
+                                    f"{str(item.get('created_at'))[:10]}"
+                                )
+
             else:
 
-                st.info(
+                st.warning(
                     "No matching items found. "
-                    "Try another search."
+                    "Try changing your search or filters."
                 )
 
-        except Exception as error:
+    except Exception as error:
 
-            st.error(
-                f"Search failed: {error}"
-            )
+        st.error("Unable to search found items.")
 
-    else:
-
-        st.info(
-            "Enter an item name, description, "
-            "or location to search."
-        )
+        st.code(str(error))
 
     st.divider()
+
 # --------------------------------------------------
 # 9. DISPLAY ALL FOUND ITEMS
 # --------------------------------------------------
