@@ -4,6 +4,8 @@ import csv
 import io
 import uuid
 import sqlite3
+import datetime
+from collections import Counter
 
 import streamlit as st
 import torch
@@ -1892,11 +1894,7 @@ elif selected_page == "📩 Recovery Requests":
 # --------------------------------------------------
 # 11. STUDENT LOGIN, SIGN UP, PROFILE,
 #     MY RECOVERY REQUESTS AND ADMIN DASHBOARD
-# --------------------------------------------------
-
-import datetime
-from collections import Counter
-
+# -------------------------------------------------
 
 # ==================================================
 # STUDENT LOGIN AND PROFILE
