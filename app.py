@@ -1515,11 +1515,17 @@ elif selected_page == "📩 Recovery Requests":
     st.divider()
 
 
+
+
 # --------------------------------------------------
-# 11. Admin Login and Recovery Requests Dashboard
+# 11. ADMIN LOGIN, RECOVERY DASHBOARD
+#     AND ADVANCED ANALYTICS
 # --------------------------------------------------
 
 elif selected_page == "🔐 Admin":
+
+    import datetime
+    from collections import Counter
 
     ADMIN_UID = "1fa8098e-27be-46c1-9916-1e20506f9fa5"
 
@@ -1549,7 +1555,9 @@ elif selected_page == "🔐 Admin":
                 st.warning("Please enter email and password.")
 
             else:
+
                 try:
+
                     login_client = create_client(
                         st.secrets["SUPABASE_URL"],
                         st.secrets["SUPABASE_KEY"]
@@ -1583,11 +1591,17 @@ elif selected_page == "🔐 Admin":
                         st.rerun()
 
                     else:
+
                         login_client.auth.sign_out()
+
                         st.error("You are not authorized as admin.")
 
                 except Exception as login_error:
-                    st.error("Login failed. Please check your email and password.")
+
+                    st.error(
+                        "Login failed. Please check your email and password."
+                    )
+
                     st.code(str(login_error))
 
     else:
@@ -1610,6 +1624,8 @@ elif selected_page == "🔐 Admin":
 
             try:
 
+                # LOAD RECOVERY REQUESTS
+
                 requests_response = (
                     admin_supabase.table("recovery_requests")
                     .select(
@@ -1624,10 +1640,8 @@ elif selected_page == "🔐 Admin":
                 recovery_requests = requests_response.data or []
 
                 # --------------------------------------------------
-                # Recovery Request Statistics
+                # RECOVERY REQUEST STATISTICS
                 # --------------------------------------------------
-
-                st.subheader("📊 Recovery Request Statistics")
 
                 total_requests = len(recovery_requests)
 
@@ -1651,26 +1665,82 @@ elif selected_page == "🔐 Admin":
                     if r.get("status") == "Rejected"
                 )
 
+                active_count = pending_count + contacted_count
+
+                st.subheader("📊 Recovery Request Statistics")
+
                 col1, col2, col3 = st.columns(3)
 
                 col1.metric("📋 Total Requests", total_requests)
                 col2.metric("⏳ Pending", pending_count)
                 col3.metric("📞 Contacted", contacted_count)
 
-                col4, col5 = st.columns(2)
+                col4, col5, col6 = st.columns(3)
 
                 col4.metric("✅ Returned", returned_count)
                 col5.metric("❌ Rejected", rejected_count)
+                col6.metric("🔄 Active Requests", active_count)
 
                 st.divider()
 
                 # --------------------------------------------------
-                # Recovery Request Analytics
+                # ADVANCED ANALYTICS
                 # --------------------------------------------------
 
-                st.subheader("📈 Recovery Request Analytics")
+                st.header("📈 Advanced Analytics Dashboard")
 
-                chart_data = {
+                if total_requests > 0:
+
+                    recovery_rate = (
+                        returned_count / total_requests
+                    ) * 100
+
+                    pending_rate = (
+                        pending_count / total_requests
+                    ) * 100
+
+                    contacted_rate = (
+                        contacted_count / total_requests
+                    ) * 100
+
+                else:
+
+                    recovery_rate = 0
+                    pending_rate = 0
+                    contacted_rate = 0
+
+                st.subheader("🎯 Recovery Performance")
+
+                rate_col1, rate_col2, rate_col3 = st.columns(3)
+
+                rate_col1.metric(
+                    "Recovery Success Rate",
+                    f"{recovery_rate:.1f}%"
+                )
+
+                rate_col2.metric(
+                    "Pending Requests",
+                    f"{pending_rate:.1f}%"
+                )
+
+                rate_col3.metric(
+                    "Contacted Requests",
+                    f"{contacted_rate:.1f}%"
+                )
+
+                st.progress(int(round(recovery_rate)))
+
+                st.caption(
+                    "Recovery Success Rate = Returned requests / Total requests."
+                )
+
+                st.divider()
+
+                # STATUS DISTRIBUTION
+
+                st.subheader("📊 Request Status Distribution")
+
+                status_chart_data = {
                     "Status": [
                         "Pending",
                         "Contacted",
@@ -1685,21 +1755,93 @@ elif selected_page == "🔐 Admin":
                     ]
                 }
 
-                st.write("**Recovery Requests by Status**")
-
                 st.bar_chart(
-                    chart_data,
+                    status_chart_data,
                     x="Status",
                     y="Count"
                 )
 
                 st.divider()
 
-                # --------------------------------------------------
-                # Date-wise Recovery Analytics
-                # --------------------------------------------------
+                # MOST REQUESTED ITEMS
 
-                st.subheader("📅 Date-wise Recovery Analytics")
+                st.subheader("🏆 Most Requested Items")
+
+                item_counter = Counter()
+
+                for request in recovery_requests:
+
+                    item_details = request.get("found_items") or {}
+
+                    item_name = item_details.get(
+                        "item_name",
+                        "Unknown item"
+                    )
+
+                    item_counter[item_name] += 1
+
+                if item_counter:
+
+                    top_items = item_counter.most_common(10)
+
+                    item_chart_data = {
+                        "Item": [item[0] for item in top_items],
+                        "Requests": [item[1] for item in top_items]
+                    }
+
+                    st.bar_chart(
+                        item_chart_data,
+                        x="Item",
+                        y="Requests"
+                    )
+
+                else:
+
+                    st.info("No item request data available.")
+
+                st.divider()
+
+                # MOST REQUESTED LOCATIONS
+
+                st.subheader("📍 Most Requested Item Locations")
+
+                location_counter = Counter()
+
+                for request in recovery_requests:
+
+                    item_details = request.get("found_items") or {}
+
+                    location = item_details.get(
+                        "location",
+                        "Not specified"
+                    )
+
+                    location_counter[location] += 1
+
+                if location_counter:
+
+                    top_locations = location_counter.most_common(10)
+
+                    location_chart_data = {
+                        "Location": [loc[0] for loc in top_locations],
+                        "Requests": [loc[1] for loc in top_locations]
+                    }
+
+                    st.bar_chart(
+                        location_chart_data,
+                        x="Location",
+                        y="Requests"
+                    )
+
+                else:
+
+                    st.info("No location data available.")
+
+                st.divider()
+
+                # DAILY REQUEST TRENDS
+
+                st.subheader("📅 Daily Recovery Request Trends")
 
                 date_counts = {}
 
@@ -1708,11 +1850,21 @@ elif selected_page == "🔐 Admin":
                     created_at = request.get("created_at")
 
                     if created_at:
-                        request_date = created_at[:10]
 
-                        date_counts[request_date] = (
-                            date_counts.get(request_date, 0) + 1
-                        )
+                        try:
+
+                            request_date = datetime.datetime.fromisoformat(
+                                str(created_at).replace("Z", "+00:00")
+                            ).date()
+
+                            date_label = request_date.isoformat()
+
+                            date_counts[date_label] = (
+                                date_counts.get(date_label, 0) + 1
+                            )
+
+                        except (ValueError, TypeError):
+                            continue
 
                 if date_counts:
 
@@ -1726,19 +1878,98 @@ elif selected_page == "🔐 Admin":
                         ]
                     }
 
-                    st.bar_chart(
+                    st.line_chart(
                         date_chart_data,
                         x="Date",
                         y="Requests"
                     )
 
                 else:
-                    st.info("No date-wise data available.")
+
+                    st.info("No daily request data available.")
+
+                st.divider()
+
+                # MONTHLY REQUEST TRENDS
+
+                st.subheader("📆 Monthly Recovery Request Trends")
+
+                month_counts = {}
+
+                for request in recovery_requests:
+
+                    created_at = request.get("created_at")
+
+                    if created_at:
+
+                        try:
+
+                            request_date = datetime.datetime.fromisoformat(
+                                str(created_at).replace("Z", "+00:00")
+                            )
+
+                            month_label = request_date.strftime("%Y-%m")
+
+                            month_counts[month_label] = (
+                                month_counts.get(month_label, 0) + 1
+                            )
+
+                        except (ValueError, TypeError):
+                            continue
+
+                if month_counts:
+
+                    sorted_months = sorted(month_counts.keys())
+
+                    monthly_chart_data = {
+                        "Month": sorted_months,
+                        "Requests": [
+                            month_counts[month]
+                            for month in sorted_months
+                        ]
+                    }
+
+                    st.bar_chart(
+                        monthly_chart_data,
+                        x="Month",
+                        y="Requests"
+                    )
+
+                else:
+
+                    st.info("No monthly request data available.")
+
+                st.divider()
+
+                # RECENT ACTIVITY
+
+                st.subheader("🕒 Recent Recovery Activity")
+
+                if recovery_requests:
+
+                    for request in recovery_requests[:5]:
+
+                        item_details = request.get("found_items") or {}
+
+                        item_name = item_details.get(
+                            "item_name",
+                            "Unknown item"
+                        )
+
+                        st.write(
+                            f"📦 **{item_name}** — "
+                            f"{request.get('status', 'Pending')} "
+                            f"— {str(request.get('created_at', ''))[:10]}"
+                        )
+
+                else:
+
+                    st.info("No recent recovery activity.")
 
                 st.divider()
 
                 # --------------------------------------------------
-                # Download Recovery Requests as CSV
+                # DOWNLOAD RECOVERY REQUESTS CSV
                 # --------------------------------------------------
 
                 st.subheader("📥 Download Recovery Report")
@@ -1783,7 +2014,7 @@ elif selected_page == "🔐 Admin":
                 st.divider()
 
                 # --------------------------------------------------
-                # Search and Filter Options
+                # SEARCH AND FILTER REQUESTS
                 # --------------------------------------------------
 
                 st.subheader("🔎 Search and Filter Requests")
@@ -1794,7 +2025,13 @@ elif selected_page == "🔐 Admin":
 
                 status_filter = st.selectbox(
                     "Filter by Status",
-                    ["All", "Pending", "Contacted", "Returned", "Rejected"]
+                    [
+                        "All",
+                        "Pending",
+                        "Contacted",
+                        "Returned",
+                        "Rejected"
+                    ]
                 )
 
                 filtered_requests = []
@@ -1804,11 +2041,13 @@ elif selected_page == "🔐 Admin":
                     item_details = request.get("found_items") or {}
 
                     item_name = item_details.get(
-                        "item_name", "Unknown item"
+                        "item_name",
+                        "Unknown item"
                     )
 
                     requester_name = request.get(
-                        "requester_name", ""
+                        "requester_name",
+                        ""
                     )
 
                     matches_search = (
@@ -1824,9 +2063,7 @@ elif selected_page == "🔐 Admin":
                     if matches_search and matches_status:
                         filtered_requests.append(request)
 
-                # --------------------------------------------------
-                # Display Filtered Requests
-                # --------------------------------------------------
+                # DISPLAY FILTERED REQUESTS
 
                 if filtered_requests:
 
@@ -1840,11 +2077,13 @@ elif selected_page == "🔐 Admin":
                         item_details = request.get("found_items") or {}
 
                         item_name = item_details.get(
-                            "item_name", "Unknown item"
+                            "item_name",
+                            "Unknown item"
                         )
 
                         item_location = item_details.get(
-                            "location", "Not specified"
+                            "location",
+                            "Not specified"
                         )
 
                         with st.expander(
@@ -1886,7 +2125,8 @@ elif selected_page == "🔐 Admin":
                             ]
 
                             current_status = request.get(
-                                "status", "Pending"
+                                "status",
+                                "Pending"
                             )
 
                             selected_status = st.selectbox(
@@ -1922,20 +2162,23 @@ elif selected_page == "🔐 Admin":
                                     st.rerun()
 
                                 except Exception as update_error:
+
                                     st.error("Unable to update status.")
                                     st.code(str(update_error))
 
                 else:
+
                     st.info(
                         "No recovery requests match your search or filter."
                     )
 
             except Exception as dashboard_error:
+
                 st.error("Unable to load recovery requests.")
                 st.code(str(dashboard_error))
 
             # --------------------------------------------------
-            # Logout
+            # LOGOUT
             # --------------------------------------------------
 
             if st.button("Logout"):
@@ -1953,8 +2196,8 @@ elif selected_page == "🔐 Admin":
 
 
 # --------------------------------------------------
-# 12. Close Database Connection
+# 12. CLOSE DATABASE CONNECTION
 # --------------------------------------------------
 
 connection.close()
-
+                st.rerun()
