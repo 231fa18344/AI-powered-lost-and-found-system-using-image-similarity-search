@@ -727,6 +727,7 @@ elif selected_page == "📦 Report Item":
             )
 
 
+
 # --------------------------------------------------
 # 7. AI IMAGE SEARCH
 # --------------------------------------------------
@@ -863,14 +864,10 @@ elif selected_page == "🤖 AI Image Search":
                                 )
 
                             # ----------------------------------
-                            # REQUEST THIS ITEM
+                            # DIRECT RECOVERY REQUEST
                             # ----------------------------------
 
                             item_id = item.get("id")
-
-                            logged_in = st.session_state.get(
-                                "student_logged_in", False
-                            )
 
                             if st.button(
                                 "🙋 This is My Item",
@@ -878,145 +875,162 @@ elif selected_page == "🤖 AI Image Search":
                                 use_container_width=True
                             ):
 
-                                if not logged_in:
+                                if not st.session_state.get(
+                                    "student_logged_in", False
+                                ):
 
                                     st.warning(
                                         "Please login to your Student "
                                         "Account before requesting recovery."
                                     )
 
-                                else:
+                                elif (
+                                    not st.session_state.get("student_user_id")
+                                    or student_supabase is None
+                                ):
 
-                                    st.session_state[
-                                        "selected_recovery_item_id"
-                                    ] = item_id
-
-                                    st.rerun()
-
-                            # ----------------------------------
-                            # RECOVERY FORM FOR SELECTED ITEM
-                            # ----------------------------------
-
-                            if (
-                                st.session_state.get(
-                                    "selected_recovery_item_id"
-                                ) == item_id
-                            ):
-
-                                if not logged_in:
-
-                                    st.warning(
-                                        "Please login to continue."
+                                    st.error(
+                                        "Your student session expired. "
+                                        "Please login again."
                                     )
 
                                 else:
 
-                                    st.subheader(
-                                        f"📩 Request Recovery: "
-                                        f"{item.get('item_name', '')}"
-                                    )
+                                    try:
 
-                                    with st.form(
-                                        f"ai_recovery_form_{item_id}"
-                                    ):
-
-                                        recovery_name = st.text_input(
-                                            "Your Name",
-                                            max_chars=100
+                                        student_id = st.session_state.get(
+                                            "student_user_id"
                                         )
 
-                                        recovery_contact = st.text_input(
-                                            "Your Contact (Email or Phone)",
-                                            max_chars=200
+                                        # FETCH STUDENT PROFILE
+
+                                        profile_response = (
+                                            student_supabase
+                                            .table("student_profiles")
+                                            .select(
+                                                "full_name, email, phone"
+                                            )
+                                            .eq("id", student_id)
+                                            .maybe_single()
+                                            .execute()
                                         )
 
-                                        recovery_message = st.text_area(
-                                            "Explain why this item belongs to you",
-                                            max_chars=1000
+                                        student_profile = (
+                                            profile_response.data or {}
                                         )
 
-                                        submit_recovery = st.form_submit_button(
-                                            "Submit Recovery Request"
+                                        student_name = (
+                                            student_profile.get(
+                                                "full_name", ""
+                                            )
                                         )
 
-                                    if submit_recovery:
-
-                                        if not recovery_name.strip():
-
-                                            st.warning(
-                                                "Please enter your name."
+                                        student_email = (
+                                            student_profile.get(
+                                                "email",
+                                                st.session_state.get(
+                                                    "student_email", ""
+                                                )
                                             )
+                                        )
 
-                                        elif not recovery_contact.strip():
-
-                                            st.warning(
-                                                "Please enter your contact details."
+                                        student_phone = (
+                                            student_profile.get(
+                                                "phone", ""
                                             )
+                                        )
 
-                                        elif not recovery_message.strip():
-
-                                            st.warning(
-                                                "Please explain why this item "
-                                                "belongs to you."
-                                            )
-
-                                        elif (
-                                            not st.session_state.get(
-                                                "student_user_id"
-                                            )
-                                            or student_supabase is None
-                                        ):
+                                        if not student_name.strip():
 
                                             st.error(
-                                                "Student session expired. "
-                                                "Please login again."
+                                                "Please complete your "
+                                                "student profile first."
+                                            )
+
+                                        elif not student_email.strip():
+
+                                            st.error(
+                                                "Your email is missing "
+                                                "from your student profile."
                                             )
 
                                         else:
 
-                                            try:
+                                            student_contact = (
+                                                f"Email: {student_email}"
+                                            )
+
+                                            if student_phone.strip():
+
+                                                student_contact += (
+                                                    f" | Phone: "
+                                                    f"{student_phone}"
+                                                )
+
+                                            # CHECK EXISTING REQUEST
+
+                                            existing_request = (
+                                                student_supabase
+                                                .table("recovery_requests")
+                                                .select("id")
+                                                .eq("item_id", item_id)
+                                                .eq("user_id", student_id)
+                                                .limit(1)
+                                                .execute()
+                                            )
+
+                                            if existing_request.data:
+
+                                                st.warning(
+                                                    "You have already "
+                                                    "requested this item."
+                                                )
+
+                                            else:
+
+                                                # INSERT RECOVERY REQUEST
 
                                                 student_supabase.table(
                                                     "recovery_requests"
                                                 ).insert(
                                                     {
                                                         "item_id": item_id,
-                                                        "user_id": (
-                                                            st.session_state.get(
-                                                                "student_user_id"
-                                                            )
-                                                        ),
+                                                        "user_id": student_id,
                                                         "requester_name": (
-                                                            recovery_name.strip()
+                                                            student_name.strip()
                                                         ),
                                                         "requester_contact": (
-                                                            recovery_contact.strip()
+                                                            student_contact
                                                         ),
                                                         "message": (
-                                                            recovery_message.strip()
+                                                            "Student identified "
+                                                            "this item as their "
+                                                            "lost belonging."
                                                         )
                                                     },
                                                     returning="minimal"
                                                 ).execute()
 
                                                 st.success(
-                                                    "Recovery request submitted "
-                                                    "successfully!"
+                                                    "🎉 Recovery request "
+                                                    "submitted successfully!"
                                                 )
 
-                                                st.session_state[
-                                                    "selected_recovery_item_id"
-                                                ] = None
+                                                st.info(
+                                                    "You can track your request "
+                                                    "in Student Login → "
+                                                    "My Recovery Requests."
+                                                )
 
                                                 st.rerun()
 
-                                            except Exception as submit_error:
+                                    except Exception as submit_error:
 
-                                                st.error(
-                                                    "Unable to submit recovery request."
-                                                )
+                                        st.error(
+                                            "Unable to submit recovery request."
+                                        )
 
-                                                st.code(str(submit_error))
+                                        st.code(str(submit_error))
 
         except Exception as error:
 
@@ -1457,14 +1471,10 @@ elif selected_page == "🔍 Search Items":
                                 )
 
                         # ----------------------------------
-                        # REQUEST THIS PARTICULAR ITEM
+                        # DIRECT RECOVERY REQUEST
                         # ----------------------------------
 
                         item_id = item.get("id")
-
-                        logged_in = st.session_state.get(
-                            "student_logged_in", False
-                        )
 
                         if st.button(
                             "🙋 This is My Item",
@@ -1472,149 +1482,162 @@ elif selected_page == "🔍 Search Items":
                             use_container_width=True
                         ):
 
-                            if not logged_in:
+                            if not st.session_state.get(
+                                "student_logged_in", False
+                            ):
 
                                 st.warning(
                                     "Please login to your Student "
                                     "Account before requesting recovery."
                                 )
 
-                            else:
+                            elif (
+                                not st.session_state.get("student_user_id")
+                                or student_supabase is None
+                            ):
 
-                                st.session_state[
-                                    "selected_recovery_item_id"
-                                ] = item_id
-
-                                st.rerun()
-
-                        # ----------------------------------
-                        # FORM FOR ONLY THE SELECTED ITEM
-                        # ----------------------------------
-
-                        if (
-                            st.session_state.get(
-                                "selected_recovery_item_id"
-                            ) == item_id
-                        ):
-
-                            if not logged_in:
-
-                                st.warning(
-                                    "Please login to continue."
+                                st.error(
+                                    "Your student session expired. "
+                                    "Please login again."
                                 )
 
                             else:
 
-                                st.subheader(
-                                    f"📩 Request Recovery: "
-                                    f"{item.get('item_name', '')}"
-                                )
+                                try:
 
-                                with st.form(
-                                    f"text_recovery_form_{item_id}"
-                                ):
-
-                                    recovery_name = st.text_input(
-                                        "Your Name",
-                                        max_chars=100
+                                    student_id = st.session_state.get(
+                                        "student_user_id"
                                     )
 
-                                    recovery_contact = st.text_input(
-                                        "Your Contact (Email or Phone)",
-                                        max_chars=200
+                                    # FETCH STUDENT PROFILE
+
+                                    profile_response = (
+                                        student_supabase
+                                        .table("student_profiles")
+                                        .select(
+                                            "full_name, email, phone"
+                                        )
+                                        .eq("id", student_id)
+                                        .maybe_single()
+                                        .execute()
                                     )
 
-                                    recovery_message = st.text_area(
-                                        "Explain why this item belongs to you",
-                                        max_chars=1000,
-                                        placeholder=(
-                                            "Describe the item and "
-                                            "how you lost it."
+                                    student_profile = (
+                                        profile_response.data or {}
+                                    )
+
+                                    student_name = (
+                                        student_profile.get(
+                                            "full_name", ""
                                         )
                                     )
 
-                                    submit_recovery = st.form_submit_button(
-                                        "Submit Recovery Request"
+                                    student_email = (
+                                        student_profile.get(
+                                            "email",
+                                            st.session_state.get(
+                                                "student_email", ""
+                                            )
+                                        )
                                     )
 
-                                if submit_recovery:
-
-                                    if not recovery_name.strip():
-
-                                        st.warning(
-                                            "Please enter your name."
+                                    student_phone = (
+                                        student_profile.get(
+                                            "phone", ""
                                         )
+                                    )
 
-                                    elif not recovery_contact.strip():
-
-                                        st.warning(
-                                            "Please enter your contact details."
-                                        )
-
-                                    elif not recovery_message.strip():
-
-                                        st.warning(
-                                            "Please explain why this item "
-                                            "belongs to you."
-                                        )
-
-                                    elif (
-                                        not st.session_state.get(
-                                            "student_user_id"
-                                        )
-                                        or student_supabase is None
-                                    ):
+                                    if not student_name.strip():
 
                                         st.error(
-                                            "Student session expired. "
-                                            "Please login again."
+                                            "Please complete your "
+                                            "student profile first."
+                                        )
+
+                                    elif not student_email.strip():
+
+                                        st.error(
+                                            "Your email is missing "
+                                            "from your student profile."
                                         )
 
                                     else:
 
-                                        try:
+                                        student_contact = (
+                                            f"Email: {student_email}"
+                                        )
+
+                                        if student_phone.strip():
+
+                                            student_contact += (
+                                                f" | Phone: "
+                                                f"{student_phone}"
+                                            )
+
+                                        # CHECK EXISTING REQUEST
+
+                                        existing_request = (
+                                            student_supabase
+                                            .table("recovery_requests")
+                                            .select("id")
+                                            .eq("item_id", item_id)
+                                            .eq("user_id", student_id)
+                                            .limit(1)
+                                            .execute()
+                                        )
+
+                                        if existing_request.data:
+
+                                            st.warning(
+                                                "You have already "
+                                                "requested this item."
+                                            )
+
+                                        else:
+
+                                            # INSERT RECOVERY REQUEST
 
                                             student_supabase.table(
                                                 "recovery_requests"
                                             ).insert(
                                                 {
                                                     "item_id": item_id,
-                                                    "user_id": (
-                                                        st.session_state.get(
-                                                            "student_user_id"
-                                                        )
-                                                    ),
+                                                    "user_id": student_id,
                                                     "requester_name": (
-                                                        recovery_name.strip()
+                                                        student_name.strip()
                                                     ),
                                                     "requester_contact": (
-                                                        recovery_contact.strip()
+                                                        student_contact
                                                     ),
                                                     "message": (
-                                                        recovery_message.strip()
+                                                        "Student identified "
+                                                        "this item as their "
+                                                        "lost belonging."
                                                     )
                                                 },
                                                 returning="minimal"
                                             ).execute()
 
                                             st.success(
-                                                "Recovery request submitted "
-                                                "successfully!"
+                                                "🎉 Recovery request "
+                                                "submitted successfully!"
                                             )
 
-                                            st.session_state[
-                                                "selected_recovery_item_id"
-                                            ] = None
+                                            st.info(
+                                                "You can track your request "
+                                                "in Student Login → "
+                                                "My Recovery Requests."
+                                            )
 
                                             st.rerun()
 
-                                        except Exception as submit_error:
+                                except Exception as submit_error:
 
-                                            st.error(
-                                                "Unable to submit recovery request."
-                                            )
+                                    st.error(
+                                        "Unable to submit recovery request."
+                                    )
 
-                                            st.code(str(submit_error))
+                                    st.code(str(submit_error))
 
             else:
 
@@ -1629,7 +1652,6 @@ elif selected_page == "🔍 Search Items":
         st.code(str(error))
 
     st.divider()
-
 # --------------------------------------------------
 # 9. DISPLAY ALL FOUND ITEMS
 # --------------------------------------------------
@@ -1866,26 +1888,43 @@ elif selected_page == "📩 Recovery Requests":
 
     st.divider()
     
+
 # --------------------------------------------------
-# 11. STUDENT LOGIN, ADMIN LOGIN, RECOVERY DASHBOARD
-#     AND ADVANCED ANALYTICS
+# 11. STUDENT LOGIN, SIGN UP, PROFILE,
+#     MY RECOVERY REQUESTS AND ADMIN DASHBOARD
 # --------------------------------------------------
+
+import datetime
+from collections import Counter
 
 
 # ==================================================
-# STUDENT SIGNUP, LOGIN, PROFILE AND MY REQUESTS
+# STUDENT LOGIN AND PROFILE
 # ==================================================
 
 elif selected_page == "👤 Student Login":
 
-    st.title("👤 Student Account")
-    st.divider()
+    st.title("🔎 FindIt AI")
+    st.header("👤 Student Login")
 
-    if not st.session_state.get("student_logged_in", False):
+    if "student_logged_in" not in st.session_state:
+        st.session_state.student_logged_in = False
 
-        login_tab, signup_tab = st.tabs(
-            ["🔐 Login", "📝 Sign Up"]
-        )
+    if "student_access_token" not in st.session_state:
+        st.session_state.student_access_token = None
+
+    if "student_refresh_token" not in st.session_state:
+        st.session_state.student_refresh_token = None
+
+    if "student_user_id" not in st.session_state:
+        st.session_state.student_user_id = None
+
+    if not st.session_state.student_logged_in:
+
+        login_tab, signup_tab = st.tabs([
+            "🔐 Login",
+            "📝 Sign Up"
+        ])
 
         # ------------------------------------------
         # STUDENT LOGIN
@@ -1893,24 +1932,30 @@ elif selected_page == "👤 Student Login":
 
         with login_tab:
 
-            st.subheader("Student Login")
-
             with st.form("student_login_form"):
 
-                student_email = st.text_input("Email")
+                student_email = st.text_input(
+                    "Email Address",
+                    key="student_login_email"
+                )
 
                 student_password = st.text_input(
                     "Password",
-                    type="password"
+                    type="password",
+                    key="student_login_password"
                 )
 
-                login_button = st.form_submit_button("Login")
+                login_button = st.form_submit_button(
+                    "Login"
+                )
 
             if login_button:
 
                 if not student_email.strip() or not student_password:
 
-                    st.warning("Please enter email and password.")
+                    st.warning(
+                        "Please enter your email and password."
+                    )
 
                 else:
 
@@ -1928,19 +1973,10 @@ elif selected_page == "👤 Student Login":
                             })
                         )
 
-                        logged_in_user = (
-                            getattr(login_response, "user", None)
-                            if login_response is not None
-                            else None
-                        )
+                        logged_user = login_response.user
+                        student_session = login_response.session
 
-                        student_session = (
-                            getattr(login_response, "session", None)
-                            if login_response is not None
-                            else None
-                        )
-
-                        if logged_in_user and student_session:
+                        if logged_user and student_session:
 
                             st.session_state.student_access_token = (
                                 student_session.access_token
@@ -1950,73 +1986,83 @@ elif selected_page == "👤 Student Login":
                                 student_session.refresh_token
                             )
 
-                            st.session_state.student_user_id = (
-                                str(logged_in_user.id)
+                            st.session_state.student_user_id = str(
+                                logged_user.id
                             )
 
                             st.session_state.student_email = (
-                                logged_in_user.email
+                                logged_user.email
                             )
 
                             st.session_state.student_logged_in = True
 
                             st.success("Student login successful!")
+
                             st.rerun()
 
                         else:
 
-                            st.error("Login failed. Please try again.")
+                            st.error(
+                                "Login failed. Please verify your account."
+                            )
 
                     except Exception as login_error:
 
-                        st.error("Invalid email or password.")
+                        st.error("Unable to login.")
+
                         st.code(str(login_error))
 
         # ------------------------------------------
-        # STUDENT SIGNUP
+        # STUDENT SIGN UP
         # ------------------------------------------
 
         with signup_tab:
 
-            st.subheader("Create Student Account")
-
             with st.form("student_signup_form"):
 
-                signup_name = st.text_input("Full Name")
-                signup_email = st.text_input("Email")
+                signup_name = st.text_input(
+                    "Full Name",
+                    key="student_signup_name"
+                )
+
+                signup_email = st.text_input(
+                    "Email Address",
+                    key="student_signup_email"
+                )
 
                 signup_phone = st.text_input(
                     "Phone Number",
                     max_chars=10,
-                    placeholder="Enter 10-digit mobile number"
+                    key="student_signup_phone"
                 )
 
                 signup_password = st.text_input(
                     "Create Password",
-                    type="password"
+                    type="password",
+                    key="student_signup_password"
                 )
 
-                confirm_password = st.text_input(
-                    "Confirm Password",
-                    type="password"
+                signup_button = st.form_submit_button(
+                    "Create Account"
                 )
-
-                signup_button = st.form_submit_button("Create Account")
 
             if signup_button:
 
-                if (
-                    not signup_name.strip()
-                    or not signup_email.strip()
-                    or not signup_password
+                if not signup_name.strip():
+
+                    st.warning("Please enter your full name.")
+
+                elif not signup_email.strip():
+
+                    st.warning("Please enter your email.")
+
+                elif (
+                    not signup_phone.isdigit()
+                    or len(signup_phone) != 10
                 ):
 
-                    st.warning("Please fill all required fields.")
-
-                elif not signup_phone.isdigit() or len(signup_phone) != 10:
-
-                    st.error(
-                        "Please enter a valid 10-digit phone number."
+                    st.warning(
+                        "Enter a valid 10-digit phone number."
                     )
 
                 elif len(signup_password) < 6:
@@ -2024,10 +2070,6 @@ elif selected_page == "👤 Student Login":
                     st.warning(
                         "Password must contain at least 6 characters."
                     )
-
-                elif signup_password != confirm_password:
-
-                    st.error("Passwords do not match.")
 
                 else:
 
@@ -2043,111 +2085,119 @@ elif selected_page == "👤 Student Login":
                             "password": signup_password
                         })
 
-                        new_user = (
-                            getattr(signup_response, "user", None)
-                            if signup_response is not None
-                            else None
-                        )
+                        new_user = signup_response.user
+                        new_session = signup_response.session
 
-                        new_session = (
-                            getattr(signup_response, "session", None)
-                            if signup_response is not None
-                            else None
-                        )
+                        if new_user:
 
-                        if new_user and new_session:
+                            if new_session:
 
-                            student_client = create_client(
-                                st.secrets["SUPABASE_URL"],
-                                st.secrets["SUPABASE_KEY"]
-                            )
+                                profile_client = create_client(
+                                    st.secrets["SUPABASE_URL"],
+                                    st.secrets["SUPABASE_KEY"]
+                                )
 
-                            student_client.auth.set_session(
-                                new_session.access_token,
-                                new_session.refresh_token
-                            )
+                                profile_client.auth.set_session(
+                                    new_session.access_token,
+                                    new_session.refresh_token
+                                )
 
-                            student_client.table(
-                                "student_profiles"
-                            ).upsert({
-                                "id": str(new_user.id),
-                                "full_name": signup_name.strip(),
-                                "email": signup_email.strip(),
-                                "phone": signup_phone.strip()
-                            }).execute()
+                                profile_client.table(
+                                    "student_profiles"
+                                ).upsert({
+                                    "id": str(new_user.id),
+                                    "full_name": signup_name.strip(),
+                                    "email": signup_email.strip(),
+                                    "phone": signup_phone.strip()
+                                }).execute()
 
-                            st.session_state.student_access_token = (
-                                new_session.access_token
-                            )
+                                st.session_state.student_access_token = (
+                                    new_session.access_token
+                                )
 
-                            st.session_state.student_refresh_token = (
-                                new_session.refresh_token
-                            )
+                                st.session_state.student_refresh_token = (
+                                    new_session.refresh_token
+                                )
 
-                            st.session_state.student_user_id = (
-                                str(new_user.id)
-                            )
+                                st.session_state.student_user_id = str(
+                                    new_user.id
+                                )
 
-                            st.session_state.student_email = (
-                                new_user.email
-                            )
+                                st.session_state.student_email = (
+                                    signup_email.strip()
+                                )
 
-                            st.session_state.student_logged_in = True
+                                st.session_state.student_logged_in = True
 
-                            st.success("Account created successfully!")
-                            st.rerun()
+                                st.success(
+                                    "Account created successfully!"
+                                )
 
-                        elif new_user:
+                                st.rerun()
 
-                            st.success(
-                                "Account created successfully! "
-                                "Please login using your email and password."
-                            )
+                            else:
+
+                                st.success(
+                                    "Account created. Please verify your "
+                                    "email and then login."
+                                )
 
                         else:
 
                             st.error(
-                                "Account creation did not return a user. "
-                                "Please try again."
+                                "Unable to create your account."
                             )
 
                     except Exception as signup_error:
 
-                        st.error("Unable to create account.")
+                        st.error("Sign up failed.")
+
                         st.code(str(signup_error))
 
-    # ----------------------------------------------
-    # STUDENT PROFILE AND RECOVERY REQUESTS
-    # ----------------------------------------------
+    # ==================================================
+    # LOGGED-IN STUDENT DASHBOARD
+    # ==================================================
 
     else:
 
-        st.success(
-            f"Logged in as "
-            f"{st.session_state.get('student_email', '')}"
-        )
+        st.success("You are logged in successfully!")
 
-        student_uid = st.session_state.get("student_user_id")
+        student_supabase = None
 
-        if student_supabase is None:
+        try:
 
-            st.error("Student session expired. Please login again.")
+            student_supabase = create_client(
+                st.secrets["SUPABASE_URL"],
+                st.secrets["SUPABASE_KEY"]
+            )
+
+            student_supabase.auth.set_session(
+                st.session_state.student_access_token,
+                st.session_state.student_refresh_token
+            )
+
+        except Exception as session_error:
+
+            st.error(
+                "Your student session expired. Please login again."
+            )
+
+            st.code(str(session_error))
 
             st.session_state.student_logged_in = False
             st.session_state.student_access_token = None
             st.session_state.student_refresh_token = None
             st.session_state.student_user_id = None
-            st.session_state.student_email = None
 
             st.rerun()
 
-        else:
+        if student_supabase is not None:
 
-            # --------------------------------------
-            # MY PROFILE
-            # --------------------------------------
+            student_uid = st.session_state.student_user_id
 
-            st.subheader("👤 My Profile")
+            # ------------------------------------------
+            # LOAD STUDENT PROFILE
+            # ------------------------------------------
 
             try:
 
@@ -2155,92 +2205,95 @@ elif selected_page == "👤 Student Login":
                     student_supabase.table("student_profiles")
                     .select("full_name, email, phone")
                     .eq("id", student_uid)
+                    .maybe_single()
                     .execute()
                 )
 
-                profile_rows = (
-                    getattr(profile_response, "data", None)
-                    if profile_response is not None
-                    else None
-                ) or []
-
-                profile = (
-                    profile_rows[0]
-                    if profile_rows
-                    else {}
-                )
-
-                with st.form("student_profile_form"):
-
-                    profile_name = st.text_input(
-                        "Full Name",
-                        value=profile.get("full_name", "") or ""
-                    )
-
-                    st.text_input(
-                        "Email",
-                        value=st.session_state.student_email or "",
-                        disabled=True
-                    )
-
-                    profile_phone = st.text_input(
-                        "Phone Number",
-                        value=profile.get("phone", "") or "",
-                        max_chars=10,
-                        placeholder="Enter 10-digit mobile number"
-                    )
-
-                    save_profile = st.form_submit_button(
-                        "Save Profile"
-                    )
-
-                if save_profile:
-
-                    if not profile_name.strip():
-
-                        st.warning("Please enter your name.")
-
-                    elif (
-                        not profile_phone.isdigit()
-                        or len(profile_phone) != 10
-                    ):
-
-                        st.error(
-                            "Please enter a valid 10-digit phone number."
-                        )
-
-                    else:
-
-                        save_response = (
-                            student_supabase.table("student_profiles")
-                            .upsert({
-                                "id": student_uid,
-                                "full_name": profile_name.strip(),
-                                "email": st.session_state.student_email,
-                                "phone": profile_phone.strip()
-                            })
-                            .execute()
-                        )
-
-                        if save_response is not None:
-
-                            st.success("Profile updated successfully!")
-                            st.rerun()
-
-                        else:
-
-                            st.error("Profile could not be saved.")
+                student_profile = profile_response.data or {}
 
             except Exception as profile_error:
 
+                student_profile = {}
+
                 st.error("Unable to load student profile.")
+
                 st.code(str(profile_error))
 
             st.divider()
 
-            # --------------------------------------
+            st.subheader("👤 My Profile")
+
+            with st.form("student_profile_update_form"):
+
+                profile_name = st.text_input(
+                    "Full Name",
+                    value=student_profile.get("full_name", "")
+                )
+
+                profile_email = st.text_input(
+                    "Email Address",
+                    value=student_profile.get(
+                        "email",
+                        st.session_state.get("student_email", "")
+                    ),
+                    disabled=True
+                )
+
+                profile_phone = st.text_input(
+                    "Phone Number",
+                    value=student_profile.get("phone", ""),
+                    max_chars=10
+                )
+
+                update_profile = st.form_submit_button(
+                    "Update Profile"
+                )
+
+            if update_profile:
+
+                if not profile_name.strip():
+
+                    st.warning("Please enter your name.")
+
+                elif (
+                    not profile_phone.isdigit()
+                    or len(profile_phone) != 10
+                ):
+
+                    st.warning(
+                        "Enter a valid 10-digit phone number."
+                    )
+
+                else:
+
+                    try:
+
+                        student_supabase.table(
+                            "student_profiles"
+                        ).upsert({
+                            "id": student_uid,
+                            "full_name": profile_name.strip(),
+                            "email": profile_email,
+                            "phone": profile_phone.strip()
+                        }).execute()
+
+                        st.success(
+                            "Profile updated successfully!"
+                        )
+
+                        st.rerun()
+
+                    except Exception as update_error:
+
+                        st.error("Unable to update profile.")
+
+                        st.code(str(update_error))
+
+            st.divider()
+
+            # ------------------------------------------
             # MY RECOVERY REQUESTS
-            # --------------------------------------
+            # ------------------------------------------
 
             st.subheader("📩 My Recovery Requests")
 
@@ -2249,7 +2302,8 @@ elif selected_page == "👤 Student Login":
                 my_requests_response = (
                     student_supabase.table("recovery_requests")
                     .select(
-                        "id, item_id, message, status, created_at, "
+                        "id, item_id, requester_name, message, "
+                        "status, created_at, "
                         "found_items(item_name, location)"
                     )
                     .eq("user_id", student_uid)
@@ -2257,90 +2311,75 @@ elif selected_page == "👤 Student Login":
                     .execute()
                 )
 
-                my_requests = (
-                    getattr(my_requests_response, "data", None)
-                    if my_requests_response is not None
-                    else None
-                ) or []
+                my_requests = my_requests_response.data or []
 
                 if my_requests:
 
-                    st.write(
-                        f"You have submitted "
-                        f"{len(my_requests)} request(s)."
+                    st.success(
+                        f"You have submitted {len(my_requests)} request(s)."
                     )
 
                     for request in my_requests:
 
-                        item_details = request.get("found_items") or {}
-
-                        if isinstance(item_details, list):
-                            item_details = (
-                                item_details[0]
-                                if item_details
-                                else {}
-                            )
-
-                        item_name = item_details.get(
-                            "item_name",
-                            "Unknown item"
+                        item_details = (
+                            request.get("found_items") or {}
                         )
 
-                        item_location = item_details.get(
-                            "location",
-                            "Not specified"
-                        )
-
-                        current_status = request.get(
-                            "status",
-                            "Pending"
-                        )
-
-                        with st.expander(
-                            f"📦 {item_name} — {current_status}"
-                        ):
-
-                            st.write("**Item:**", item_name)
+                        with st.container(border=True):
 
                             st.write(
-                                "**Location:**",
-                                item_location
+                                f"**Item:** "
+                                f"{item_details.get('item_name', 'Unknown item')}"
                             )
 
                             st.write(
-                                "**Your Message:**",
-                                request.get("message", "")
+                                f"**Location:** "
+                                f"{item_details.get('location', 'Not specified')}"
                             )
 
                             st.write(
-                                "**Status:**",
-                                current_status
+                                f"**Message:** "
+                                f"{request.get('message', '')}"
                             )
 
                             st.write(
-                                "**Submitted:**",
-                                str(request.get("created_at", ""))[:10]
+                                f"**Request Date:** "
+                                f"{str(request.get('created_at', ''))[:10]}"
+                            )
+
+                            request_status = request.get(
+                                "status",
+                                "Pending"
+                            )
+
+                            st.write(
+                                f"**Status:** {request_status}"
                             )
 
                 else:
 
                     st.info(
-                        "You have not submitted any recovery "
-                        "requests yet."
+                        "You have not submitted any recovery requests yet."
                     )
 
-            except Exception as requests_error:
+            except Exception as request_error:
 
-                st.error("Unable to load your recovery requests.")
-                st.code(str(requests_error))
+                st.error(
+                    "Unable to load your recovery requests."
+                )
+
+                st.code(str(request_error))
 
             st.divider()
 
-            # --------------------------------------
+            # ------------------------------------------
             # STUDENT LOGOUT
-            # --------------------------------------
+            # ------------------------------------------
 
-            if st.button("🚪 Student Logout"):
+            if st.button(
+                "🚪 Student Logout",
+                key="student_logout_button"
+            ):
 
                 try:
                     student_supabase.auth.sign_out()
@@ -2354,6 +2393,7 @@ elif selected_page == "👤 Student Login":
                 st.session_state.student_email = None
 
                 st.success("Logged out successfully!")
+
                 st.rerun()
 
 
@@ -2363,36 +2403,45 @@ elif selected_page == "👤 Student Login":
 
 elif selected_page == "🔐 Admin":
 
-    import datetime
-    from collections import Counter
-
     ADMIN_UID = "1fa8098e-27be-46c1-9916-1e20506f9fa5"
 
     st.title("🔎 FindIt AI")
-    st.divider()
+
     st.header("🔐 Admin Login")
 
     if "admin_logged_in" not in st.session_state:
         st.session_state.admin_logged_in = False
 
+    # ----------------------------------------------
+    # ADMIN LOGIN
+    # ----------------------------------------------
+
     if not st.session_state.admin_logged_in:
 
         with st.form("admin_login_form"):
 
-            admin_email = st.text_input("Admin Email")
+            admin_email = st.text_input(
+                "Admin Email",
+                key="admin_email_input"
+            )
 
             admin_password = st.text_input(
                 "Admin Password",
-                type="password"
+                type="password",
+                key="admin_password_input"
             )
 
-            login_button = st.form_submit_button("Login")
+            login_button = st.form_submit_button(
+                "Login"
+            )
 
         if login_button:
 
             if not admin_email.strip() or not admin_password:
 
-                st.warning("Please enter email and password.")
+                st.warning(
+                    "Please enter your email and password."
+                )
 
             else:
 
@@ -2403,26 +2452,19 @@ elif selected_page == "🔐 Admin":
                         st.secrets["SUPABASE_KEY"]
                     )
 
-                    login_response = login_client.auth.sign_in_with_password({
-                        "email": admin_email.strip(),
-                        "password": admin_password
-                    })
-
-                    logged_in_user = (
-                        getattr(login_response, "user", None)
-                        if login_response is not None
-                        else None
+                    login_response = (
+                        login_client.auth.sign_in_with_password({
+                            "email": admin_email.strip(),
+                            "password": admin_password
+                        })
                     )
 
-                    admin_session = (
-                        getattr(login_response, "session", None)
-                        if login_response is not None
-                        else None
-                    )
+                    logged_user = login_response.user
+                    admin_session = login_response.session
 
                     if (
-                        logged_in_user
-                        and str(logged_in_user.id) == ADMIN_UID
+                        logged_user
+                        and str(logged_user.id) == ADMIN_UID
                         and admin_session
                     ):
 
@@ -2437,21 +2479,28 @@ elif selected_page == "🔐 Admin":
                         st.session_state.admin_logged_in = True
 
                         st.success("Admin login successful!")
+
                         st.rerun()
 
                     else:
 
                         login_client.auth.sign_out()
 
-                        st.error("You are not authorized as admin.")
+                        st.error(
+                            "You are not authorized as admin."
+                        )
 
                 except Exception as login_error:
 
                     st.error(
-                        "Login failed. Please check your email and password."
+                        "Login failed. Check your email and password."
                     )
 
                     st.code(str(login_error))
+
+    # ----------------------------------------------
+    # ADMIN DASHBOARD
+    # ----------------------------------------------
 
     else:
 
@@ -2459,7 +2508,9 @@ elif selected_page == "🔐 Admin":
 
         if admin_supabase is None:
 
-            st.error("Admin session expired. Please login again.")
+            st.error(
+                "Admin session expired. Please login again."
+            )
 
             st.session_state.admin_logged_in = False
             st.session_state.admin_access_token = None
@@ -2473,27 +2524,85 @@ elif selected_page == "🔐 Admin":
 
             try:
 
+                # ----------------------------------
                 # LOAD RECOVERY REQUESTS
+                # ----------------------------------
 
                 requests_response = (
                     admin_supabase.table("recovery_requests")
                     .select(
-                        "id, item_id, requester_name, requester_contact, "
-                        "message, status, created_at, "
-                        "found_items(item_name, location)"
+                        "id, item_id, user_id, requester_name, "
+                        "requester_contact, message, status, created_at"
                     )
                     .order("created_at", desc=True)
                     .execute()
                 )
 
-                recovery_requests = (
-                    getattr(requests_response, "data", None)
-                    if requests_response is not None
-                    else None
-                ) or []
+                recovery_requests = requests_response.data or []
 
                 # ----------------------------------
-                # RECOVERY REQUEST STATISTICS
+                # LOAD FOUND ITEM DETAILS
+                # ----------------------------------
+
+                items_response = (
+                    admin_supabase.table("found_items")
+                    .select("*")
+                    .execute()
+                )
+
+                found_items = items_response.data or []
+
+                items_by_id = {
+                    str(item.get("id")): item
+                    for item in found_items
+                }
+
+                # ----------------------------------
+                # LOAD STUDENT PROFILES
+                # ----------------------------------
+
+                student_ids = list(set(
+                    request.get("user_id")
+                    for request in recovery_requests
+                    if request.get("user_id")
+                ))
+
+                profiles_by_id = {}
+
+                if student_ids:
+
+                    profiles_response = (
+                        admin_supabase.table("student_profiles")
+                        .select("id, full_name, email, phone")
+                        .in_("id", student_ids)
+                        .execute()
+                    )
+
+                    student_profiles = profiles_response.data or []
+
+                    profiles_by_id = {
+                        str(profile.get("id")): profile
+                        for profile in student_profiles
+                    }
+
+                # ----------------------------------
+                # ATTACH ITEM AND STUDENT DETAILS
+                # ----------------------------------
+
+                for request in recovery_requests:
+
+                    request["item_details"] = items_by_id.get(
+                        str(request.get("item_id")),
+                        {}
+                    )
+
+                    request["student_details"] = profiles_by_id.get(
+                        str(request.get("user_id")),
+                        {}
+                    )
+
+                # ----------------------------------
+                # REQUEST STATISTICS
                 # ----------------------------------
 
                 total_requests = len(recovery_requests)
@@ -2532,17 +2641,17 @@ elif selected_page == "🔐 Admin":
 
                 col4.metric("✅ Returned", returned_count)
                 col5.metric("❌ Rejected", rejected_count)
-                col6.metric("🔄 Active Requests", active_count)
+                col6.metric("🔄 Active", active_count)
 
                 st.divider()
 
                 # ----------------------------------
-                # ADVANCED ANALYTICS
+                # RECOVERY PERFORMANCE
                 # ----------------------------------
 
-                st.header("📈 Advanced Analytics Dashboard")
+                st.header("📈 Advanced Analytics")
 
-                if total_requests > 0:
+                if total_requests:
 
                     recovery_rate = (
                         returned_count / total_requests
@@ -2562,8 +2671,6 @@ elif selected_page == "🔐 Admin":
                     pending_rate = 0
                     contacted_rate = 0
 
-                st.subheader("🎯 Recovery Performance")
-
                 rate_col1, rate_col2, rate_col3 = st.columns(3)
 
                 rate_col1.metric(
@@ -2581,16 +2688,15 @@ elif selected_page == "🔐 Admin":
                     f"{contacted_rate:.1f}%"
                 )
 
-                st.progress(int(round(recovery_rate)))
-
-                st.caption(
-                    "Recovery Success Rate = Returned requests / "
-                    "Total requests."
+                st.progress(
+                    int(round(recovery_rate))
                 )
 
                 st.divider()
 
-                # STATUS DISTRIBUTION
+                # ----------------------------------
+                # STATUS CHART
+                # ----------------------------------
 
                 st.subheader("📊 Request Status Distribution")
 
@@ -2617,7 +2723,9 @@ elif selected_page == "🔐 Admin":
 
                 st.divider()
 
+                # ----------------------------------
                 # MOST REQUESTED ITEMS
+                # ----------------------------------
 
                 st.subheader("🏆 Most Requested Items")
 
@@ -2625,19 +2733,9 @@ elif selected_page == "🔐 Admin":
 
                 for request in recovery_requests:
 
-                    item_details = request.get("found_items") or {}
-
-                    if isinstance(item_details, list):
-                        item_details = (
-                            item_details[0]
-                            if item_details
-                            else {}
-                        )
-
-                    item_name = item_details.get(
-                        "item_name",
-                        "Unknown item"
-                    )
+                    item_name = request.get(
+                        "item_details", {}
+                    ).get("item_name", "Unknown item")
 
                     item_counter[item_name] += 1
 
@@ -2646,8 +2744,12 @@ elif selected_page == "🔐 Admin":
                     top_items = item_counter.most_common(10)
 
                     item_chart_data = {
-                        "Item": [item[0] for item in top_items],
-                        "Requests": [item[1] for item in top_items]
+                        "Item": [
+                            item[0] for item in top_items
+                        ],
+                        "Requests": [
+                            item[1] for item in top_items
+                        ]
                     }
 
                     st.bar_chart(
@@ -2662,27 +2764,19 @@ elif selected_page == "🔐 Admin":
 
                 st.divider()
 
+                # ----------------------------------
                 # MOST REQUESTED LOCATIONS
+                # ----------------------------------
 
-                st.subheader("📍 Most Requested Item Locations")
+                st.subheader("📍 Most Requested Locations")
 
                 location_counter = Counter()
 
                 for request in recovery_requests:
 
-                    item_details = request.get("found_items") or {}
-
-                    if isinstance(item_details, list):
-                        item_details = (
-                            item_details[0]
-                            if item_details
-                            else {}
-                        )
-
-                    location = item_details.get(
-                        "location",
-                        "Not specified"
-                    )
+                    location = request.get(
+                        "item_details", {}
+                    ).get("location", "Not specified")
 
                     location_counter[location] += 1
 
@@ -2691,8 +2785,12 @@ elif selected_page == "🔐 Admin":
                     top_locations = location_counter.most_common(10)
 
                     location_chart_data = {
-                        "Location": [loc[0] for loc in top_locations],
-                        "Requests": [loc[1] for loc in top_locations]
+                        "Location": [
+                            loc[0] for loc in top_locations
+                        ],
+                        "Requests": [
+                            loc[1] for loc in top_locations
+                        ]
                     }
 
                     st.bar_chart(
@@ -2707,9 +2805,11 @@ elif selected_page == "🔐 Admin":
 
                 st.divider()
 
+                # ----------------------------------
                 # DAILY REQUEST TRENDS
+                # ----------------------------------
 
-                st.subheader("📅 Daily Recovery Request Trends")
+                st.subheader("📅 Daily Recovery Trends")
 
                 date_counts = {}
 
@@ -2721,9 +2821,14 @@ elif selected_page == "🔐 Admin":
 
                         try:
 
-                            request_date = datetime.datetime.fromisoformat(
-                                str(created_at).replace("Z", "+00:00")
-                            ).date()
+                            request_date = (
+                                datetime.datetime.fromisoformat(
+                                    str(created_at).replace(
+                                        "Z",
+                                        "+00:00"
+                                    )
+                                ).date()
+                            )
 
                             date_label = request_date.isoformat()
 
@@ -2736,7 +2841,7 @@ elif selected_page == "🔐 Admin":
 
                 if date_counts:
 
-                    sorted_dates = sorted(date_counts.keys())
+                    sorted_dates = sorted(date_counts)
 
                     date_chart_data = {
                         "Date": sorted_dates,
@@ -2758,9 +2863,11 @@ elif selected_page == "🔐 Admin":
 
                 st.divider()
 
+                # ----------------------------------
                 # MONTHLY REQUEST TRENDS
+                # ----------------------------------
 
-                st.subheader("📆 Monthly Recovery Request Trends")
+                st.subheader("📆 Monthly Recovery Trends")
 
                 month_counts = {}
 
@@ -2772,8 +2879,13 @@ elif selected_page == "🔐 Admin":
 
                         try:
 
-                            request_date = datetime.datetime.fromisoformat(
-                                str(created_at).replace("Z", "+00:00")
+                            request_date = (
+                                datetime.datetime.fromisoformat(
+                                    str(created_at).replace(
+                                        "Z",
+                                        "+00:00"
+                                    )
+                                )
                             )
 
                             month_label = request_date.strftime("%Y-%m")
@@ -2787,7 +2899,7 @@ elif selected_page == "🔐 Admin":
 
                 if month_counts:
 
-                    sorted_months = sorted(month_counts.keys())
+                    sorted_months = sorted(month_counts)
 
                     monthly_chart_data = {
                         "Month": sorted_months,
@@ -2809,7 +2921,9 @@ elif selected_page == "🔐 Admin":
 
                 st.divider()
 
+                # ----------------------------------
                 # RECENT ACTIVITY
+                # ----------------------------------
 
                 st.subheader("🕒 Recent Recovery Activity")
 
@@ -2817,24 +2931,14 @@ elif selected_page == "🔐 Admin":
 
                     for request in recovery_requests[:5]:
 
-                        item_details = request.get("found_items") or {}
-
-                        if isinstance(item_details, list):
-                            item_details = (
-                                item_details[0]
-                                if item_details
-                                else {}
-                            )
-
-                        item_name = item_details.get(
-                            "item_name",
-                            "Unknown item"
-                        )
+                        item_name = request.get(
+                            "item_details", {}
+                        ).get("item_name", "Unknown item")
 
                         st.write(
                             f"📦 **{item_name}** — "
-                            f"{request.get('status', 'Pending')} "
-                            f"— {str(request.get('created_at', ''))[:10]}"
+                            f"{request.get('status', 'Pending')} — "
+                            f"{str(request.get('created_at', ''))[:10]}"
                         )
 
                 else:
@@ -2844,65 +2948,14 @@ elif selected_page == "🔐 Admin":
                 st.divider()
 
                 # ----------------------------------
-                # DOWNLOAD RECOVERY REQUESTS CSV
-                # ----------------------------------
-
-                st.subheader("📥 Download Recovery Report")
-
-                csv_buffer = io.StringIO()
-
-                csv_writer = csv.writer(csv_buffer)
-
-                csv_writer.writerow([
-                    "Request ID",
-                    "Item Name",
-                    "Item Location",
-                    "Requester Name",
-                    "Requester Contact",
-                    "Message",
-                    "Status",
-                    "Created At"
-                ])
-
-                for request in recovery_requests:
-
-                    item_details = request.get("found_items") or {}
-
-                    if isinstance(item_details, list):
-                        item_details = (
-                            item_details[0]
-                            if item_details
-                            else {}
-                        )
-
-                    csv_writer.writerow([
-                        request.get("id"),
-                        item_details.get("item_name", "Unknown item"),
-                        item_details.get("location", "Not specified"),
-                        request.get("requester_name"),
-                        request.get("requester_contact"),
-                        request.get("message"),
-                        request.get("status"),
-                        request.get("created_at")
-                    ])
-
-                st.download_button(
-                    label="📥 Download Recovery Requests CSV",
-                    data=csv_buffer.getvalue(),
-                    file_name="FindIt_AI_Recovery_Requests.csv",
-                    mime="text/csv"
-                )
-
-                st.divider()
-
-                # ----------------------------------
                 # SEARCH AND FILTER REQUESTS
                 # ----------------------------------
 
-                st.subheader("🔎 Search and Filter Requests")
+                st.subheader("🔎 Search Recovery Requests")
 
-                search_text = st.text_input(
-                    "Search by requester name or item name"
+                request_search = st.text_input(
+                    "Search by student name, item, email or location",
+                    key="admin_request_search"
                 )
 
                 status_filter = st.selectbox(
@@ -2913,132 +2966,183 @@ elif selected_page == "🔐 Admin":
                         "Contacted",
                         "Returned",
                         "Rejected"
-                    ]
+                    ],
+                    key="admin_status_filter"
                 )
 
                 filtered_requests = []
 
                 for request in recovery_requests:
 
-                    item_details = request.get("found_items") or {}
+                    item_details = request.get("item_details", {})
+                    student_details = request.get("student_details", {})
 
-                    if isinstance(item_details, list):
-                        item_details = (
-                            item_details[0]
-                            if item_details
-                            else {}
-                        )
+                    searchable_text = " ".join([
+                        str(request.get("requester_name", "")),
+                        str(request.get("requester_contact", "")),
+                        str(student_details.get("full_name", "")),
+                        str(student_details.get("email", "")),
+                        str(student_details.get("phone", "")),
+                        str(item_details.get("item_name", "")),
+                        str(item_details.get("location", ""))
+                    ]).lower()
 
-                    item_name = item_details.get(
-                        "item_name",
-                        "Unknown item"
-                    )
+                    if (
+                        request_search.strip()
+                        and request_search.strip().lower()
+                        not in searchable_text
+                    ):
+                        continue
 
-                    requester_name = request.get(
-                        "requester_name",
-                        ""
-                    )
+                    if (
+                        status_filter != "All"
+                        and request.get("status") != status_filter
+                    ):
+                        continue
 
-                    matches_search = (
-                        search_text.lower() in requester_name.lower()
-                        or search_text.lower() in item_name.lower()
-                    )
+                    filtered_requests.append(request)
 
-                    matches_status = (
-                        status_filter == "All"
-                        or request.get("status") == status_filter
-                    )
+                st.write(
+                    f"Showing {len(filtered_requests)} request(s)."
+                )
 
-                    if matches_search and matches_status:
-                        filtered_requests.append(request)
+                st.divider()
 
-                # DISPLAY FILTERED REQUESTS
+                # ----------------------------------
+                # REQUEST DETAILS AND STATUS UPDATE
+                # ----------------------------------
+
+                st.subheader("📩 Recovery Request Details")
 
                 if filtered_requests:
 
-                    st.write(
-                        f"Showing {len(filtered_requests)} "
-                        f"of {len(recovery_requests)} requests"
-                    )
-
                     for request in filtered_requests:
 
-                        item_details = request.get("found_items") or {}
+                        item_details = request.get(
+                            "item_details", {}
+                        )
 
-                        if isinstance(item_details, list):
-                            item_details = (
-                                item_details[0]
-                                if item_details
-                                else {}
-                            )
+                        student_details = request.get(
+                            "student_details", {}
+                        )
+
+                        request_id = request.get("id")
 
                         item_name = item_details.get(
                             "item_name",
                             "Unknown item"
                         )
 
-                        item_location = item_details.get(
-                            "location",
-                            "Not specified"
+                        student_name = student_details.get(
+                            "full_name",
+                            request.get("requester_name", "Unknown student")
                         )
 
                         with st.expander(
-                            f"Request #{request['id']} - {item_name}"
+                            f"📦 {item_name} — {student_name} "
+                            f"({request.get('status', 'Pending')})"
                         ):
 
-                            st.write(
-                                "**Requester:**",
-                                request.get("requester_name", "")
-                            )
+                            st.markdown("### 👨‍🎓 Student Details")
 
                             st.write(
-                                "**Contact:**",
-                                request.get("requester_contact", "")
-                            )
-
-                            st.write("**Item:**", item_name)
-
-                            st.write(
-                                "**Location:**",
-                                item_location
+                                f"**Name:** {student_name}"
                             )
 
                             st.write(
-                                "**Message:**",
-                                request.get("message", "")
+                                f"**Email:** "
+                                f"{student_details.get('email', 'Not available')}"
                             )
 
                             st.write(
-                                "**Current Status:**",
-                                request.get("status", "Pending")
+                                f"**Phone:** "
+                                f"{student_details.get('phone', 'Not available')}"
                             )
 
-                            status_options = [
-                                "Pending",
-                                "Contacted",
-                                "Returned",
-                                "Rejected"
-                            ]
-
-                            current_status = request.get(
-                                "status",
-                                "Pending"
+                            st.write(
+                                f"**Saved Contact:** "
+                                f"{request.get('requester_contact', 'Not available')}"
                             )
 
-                            selected_status = st.selectbox(
+                            st.divider()
+
+                            st.markdown("### 📦 Found Item Details")
+
+                            st.write(
+                                f"**Item Name:** {item_name}"
+                            )
+
+                            st.write(
+                                f"**Description:** "
+                                f"{item_details.get('description', 'Not available')}"
+                            )
+
+                            st.write(
+                                f"**Location:** "
+                                f"{item_details.get('location', 'Not available')}"
+                            )
+
+                            item_image = item_details.get("image_path")
+
+                            if item_image:
+
+                                st.image(
+                                    item_image,
+                                    width=250
+                                )
+
+                            st.divider()
+
+                            st.markdown("### 📝 Recovery Request")
+
+                            st.write(
+                                request.get(
+                                    "message",
+                                    "No message provided."
+                                )
+                            )
+
+                            st.write(
+                                f"**Submitted:** "
+                                f"{str(request.get('created_at', ''))[:19]}"
+                            )
+
+                            st.write(
+                                f"**Current Status:** "
+                                f"{request.get('status', 'Pending')}"
+                            )
+
+                            st.divider()
+
+                            new_status = st.selectbox(
                                 "Update Request Status",
-                                status_options,
-                                index=(
-                                    status_options.index(current_status)
-                                    if current_status in status_options
-                                    else 0
+                                [
+                                    "Pending",
+                                    "Contacted",
+                                    "Returned",
+                                    "Rejected"
+                                ],
+                                index=[
+                                    "Pending",
+                                    "Contacted",
+                                    "Returned",
+                                    "Rejected"
+                                ].index(
+                                    request.get("status", "Pending")
+                                    if request.get("status") in [
+                                        "Pending",
+                                        "Contacted",
+                                        "Returned",
+                                        "Rejected"
+                                    ]
+                                    else "Pending"
                                 ),
-                                key=f"status_{request['id']}"
+                                key=f"admin_status_{request_id}"
                             )
 
                             if st.button(
-                                "Update Status",
-                                key=f"update_{request['id']}"
+                                "💾 Save Status",
+                                key=f"save_status_{request_id}"
                             ):
 
                                 try:
@@ -3046,56 +3150,125 @@ elif selected_page == "🔐 Admin":
                                     (
                                         admin_supabase
                                         .table("recovery_requests")
-                                        .update({"status": selected_status})
-                                        .eq("id", request["id"])
+                                        .update({
+                                            "status": new_status
+                                        })
+                                        .eq("id", request_id)
                                         .execute()
                                     )
 
                                     st.success(
-                                        "Status updated successfully!"
+                                        "Request status updated successfully!"
                                     )
 
                                     st.rerun()
 
-                                except Exception as update_error:
+                                except Exception as status_error:
 
-                                    st.error("Unable to update status.")
-                                    st.code(str(update_error))
+                                    st.error(
+                                        "Unable to update request status."
+                                    )
+
+                                    st.code(str(status_error))
 
                 else:
 
                     st.info(
-                        "No recovery requests match your search or filter."
+                        "No recovery requests match your search."
                     )
+
+                st.divider()
+
+                # ----------------------------------
+                # DOWNLOAD CSV REPORT
+                # ----------------------------------
+
+                st.subheader("📥 Download Recovery Report")
+
+                csv_buffer = io.StringIO()
+
+                csv_writer = csv.writer(csv_buffer)
+
+                csv_writer.writerow([
+                    "Request ID",
+                    "Student Name",
+                    "Student Email",
+                    "Student Phone",
+                    "Item Name",
+                    "Item Description",
+                    "Item Location",
+                    "Requester Contact",
+                    "Message",
+                    "Status",
+                    "Created At"
+                ])
+
+                for request in recovery_requests:
+
+                    item_details = request.get(
+                        "item_details", {}
+                    )
+
+                    student_details = request.get(
+                        "student_details", {}
+                    )
+
+                    csv_writer.writerow([
+                        request.get("id"),
+                        student_details.get(
+                            "full_name",
+                            request.get("requester_name", "")
+                        ),
+                        student_details.get("email", ""),
+                        student_details.get("phone", ""),
+                        item_details.get("item_name", ""),
+                        item_details.get("description", ""),
+                        item_details.get("location", ""),
+                        request.get("requester_contact", ""),
+                        request.get("message", ""),
+                        request.get("status", ""),
+                        request.get("created_at", "")
+                    ])
+
+                st.download_button(
+                    label="⬇️ Download CSV Report",
+                    data=csv_buffer.getvalue(),
+                    file_name="FindItAI_Recovery_Report.csv",
+                    mime="text/csv"
+                )
 
             except Exception as dashboard_error:
 
-                st.error("Unable to load recovery requests.")
+                st.error(
+                    "Unable to load the Admin Dashboard."
+                )
+
                 st.code(str(dashboard_error))
 
-            # --------------------------------------
-            # ADMIN LOGOUT
-            # --------------------------------------
+        st.divider()
 
-            if st.button("Logout"):
+        # ------------------------------------------
+        # ADMIN LOGOUT
+        # ------------------------------------------
 
-                try:
+        if st.button(
+            "🚪 Admin Logout",
+            key="admin_logout_button"
+        ):
+
+            try:
+                if admin_supabase is not None:
                     admin_supabase.auth.sign_out()
-                except Exception:
-                    pass
+            except Exception:
+                pass
 
-                st.session_state.admin_logged_in = False
-                st.session_state.admin_access_token = None
-                st.session_state.admin_refresh_token = None
+            st.session_state.admin_logged_in = False
+            st.session_state.admin_access_token = None
+            st.session_state.admin_refresh_token = None
 
-                st.rerun()
+            st.success("Admin logged out successfully!")
 
-
-# --------------------------------------------------
-# 12. CLOSE DATABASE CONNECTION
-# --------------------------------------------------
-
-connection.close()
+            st.rerun()
 # --------------------------------------------------
 # 12. CLOSE DATABASE CONNECTION
 # --------------------------------------------------
