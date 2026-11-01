@@ -1472,6 +1472,7 @@ elif selected_page == "📋 All Found Items":
 
     st.divider()
 
+
 # --------------------------------------------------
 # 10. Safe Item Recovery Request
 # --------------------------------------------------
@@ -1516,6 +1517,22 @@ elif selected_page == "📩 Recovery Requests":
                 "Enter your details to request recovery of this item."
             )
 
+            # Check whether student is logged in
+            student_is_logged_in = st.session_state.get(
+                "student_logged_in", False
+            )
+
+            if student_is_logged_in:
+                st.success(
+                    "Logged in as: "
+                    + st.session_state.get("student_email", "")
+                )
+            else:
+                st.info(
+                    "You can submit a request without logging in. "
+                    "Login to your student account to track your requests."
+                )
+
             with st.form("recovery_request_form"):
 
                 requester_name = st.text_input(
@@ -1542,7 +1559,7 @@ elif selected_page == "📩 Recovery Requests":
                 )
 
                 submitted = st.form_submit_button(
-                    "Submit Recovery Request"
+                    "📩 Submit Recovery Request"
                 )
 
             if submitted:
@@ -1558,13 +1575,21 @@ elif selected_page == "📩 Recovery Requests":
 
                 else:
                     try:
-                        # Submit request without returning row data
+                        # Attach logged-in student's ID
+                        student_user_id = (
+                            st.session_state.get("student_user_id")
+                            if student_is_logged_in
+                            else None
+                        )
+
+                        # Submit recovery request
                         supabase.table("recovery_requests").insert(
                             {
                                 "item_id": item_options[selected_item],
                                 "requester_name": requester_name.strip(),
                                 "requester_contact": requester_contact.strip(),
-                                "message": message.strip()
+                                "message": message.strip(),
+                                "user_id": student_user_id
                             },
                             returning="minimal"
                         ).execute()
@@ -1573,10 +1598,18 @@ elif selected_page == "📩 Recovery Requests":
                             "Recovery request submitted successfully!"
                         )
 
-                        st.info(
-                            "Your request has been saved. "
-                            "The finder has not been automatically notified."
-                        )
+                        if student_user_id:
+                            st.info(
+                                "Your request is linked to your student "
+                                "account. Check My Recovery Requests "
+                                "in Student Login."
+                            )
+                        else:
+                            st.info(
+                                "Your request has been saved. "
+                                "Login is required to track requests "
+                                "through your student account."
+                            )
 
                     except Exception as submit_error:
                         st.error("Unable to submit recovery request.")
