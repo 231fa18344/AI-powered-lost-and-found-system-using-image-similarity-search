@@ -725,6 +725,7 @@ elif selected_page == "📦 Report Item":
             st.error(
                 "Please fill in all required fields."
             )
+
 # --------------------------------------------------
 # 7. AI IMAGE SEARCH
 # --------------------------------------------------
@@ -732,7 +733,6 @@ elif selected_page == "📦 Report Item":
 elif selected_page == "🤖 AI Image Search":
 
     st.title("🔎 FindIt AI")
-
     st.header("🤖 Search Found Items Using AI")
 
     st.write(
@@ -765,11 +765,7 @@ elif selected_page == "🤖 AI Image Search":
             ).convert("RGB")
 
             st.write("**Your uploaded search image:**")
-
-            st.image(
-                query_image,
-                width=220
-            )
+            st.image(query_image, width=220)
 
             response = (
                 supabase.table("found_items")
@@ -779,7 +775,7 @@ elif selected_page == "🤖 AI Image Search":
                 .execute()
             )
 
-            database_items = response.data
+            database_items = response.data or []
 
             image_items = []
 
@@ -790,10 +786,7 @@ elif selected_page == "🤖 AI Image Search":
 
                 saved_url = item.get("image_path")
 
-                if (
-                    saved_url
-                    and saved_url.startswith("https://")
-                ):
+                if saved_url and saved_url.startswith("https://"):
 
                     try:
 
@@ -808,9 +801,7 @@ elif selected_page == "🤖 AI Image Search":
                             BytesIO(image_response.content)
                         ).convert("RGB")
 
-                        image_items.append(
-                            (item, saved_image)
-                        )
+                        image_items.append((item, saved_image))
 
                     except Exception:
                         continue
@@ -824,9 +815,7 @@ elif selected_page == "🤖 AI Image Search":
 
             else:
 
-                with st.spinner(
-                    "🤖 AI is comparing the images..."
-                ):
+                with st.spinner("🤖 AI is comparing the images..."):
 
                     ranked = find_similar_items(
                         query_image,
@@ -837,9 +826,7 @@ elif selected_page == "🤖 AI Image Search":
 
                 if not ranked:
 
-                    st.info(
-                        "No similar items found."
-                    )
+                    st.info("No similar items found.")
 
                 else:
 
@@ -850,11 +837,7 @@ elif selected_page == "🤖 AI Image Search":
                             col1, col2 = st.columns([1, 2])
 
                             with col1:
-
-                                st.image(
-                                    saved_image,
-                                    width=220
-                                )
+                                st.image(saved_image, width=220)
 
                             with col2:
 
@@ -878,6 +861,139 @@ elif selected_page == "🤖 AI Image Search":
                                     f"{score * 100:.2f}%"
                                 )
 
+                            # ----------------------------------
+                            # REQUEST THIS ITEM
+                            # ----------------------------------
+
+                            item_id = item.get("id")
+                            logged_in = st.session_state.get(
+                                "student_logged_in", False
+                            )
+
+                            if st.button(
+                                "🙋 This is My Item",
+                                key=f"ai_recover_{item_id}",
+                                use_container_width=True
+                            ):
+
+                                if not logged_in:
+                                    st.warning(
+                                        "Please login to your Student "
+                                        "Account before requesting recovery."
+                                    )
+
+                                else:
+                                    st.session_state[
+                                        "selected_recovery_item_id"
+                                    ] = item_id
+
+                                    st.rerun()
+
+                            # Show form only for selected item
+
+                            if (
+                                st.session_state.get(
+                                    "selected_recovery_item_id"
+                                ) == item_id
+                            ):
+
+                                if not logged_in:
+
+                                    st.warning(
+                                        "Please login to continue."
+                                    )
+
+                                else:
+
+                                    st.subheader(
+                                        f"📩 Request Recovery: "
+                                        f"{item.get('item_name', '')}"
+                                    )
+
+                                    with st.form(
+                                        f"ai_recovery_form_{item_id}"
+                                    ):
+
+                                        recovery_name = st.text_input(
+                                            "Your Name",
+                                            max_chars=100
+                                        )
+
+                                        recovery_contact = st.text_input(
+                                            "Your Contact (Email or Phone)",
+                                            max_chars=200
+                                        )
+
+                                        recovery_message = st.text_area(
+                                            "Explain why this item belongs to you",
+                                            max_chars=1000
+                                        )
+
+                                        submit_recovery = st.form_submit_button(
+                                            "Submit Recovery Request"
+                                        )
+
+                                    if submit_recovery:
+
+                                        if not recovery_name.strip():
+                                            st.warning(
+                                                "Please enter your name."
+                                            )
+
+                                        elif not recovery_contact.strip():
+                                            st.warning(
+                                                "Please enter your contact details."
+                                            )
+
+                                        elif not recovery_message.strip():
+                                            st.warning(
+                                                "Please explain why this item "
+                                                "belongs to you."
+                                            )
+
+                                        else:
+
+                                            try:
+
+                                                supabase.table(
+                                                    "recovery_requests"
+                                                ).insert(
+                                                    {
+                                                        "item_id": item_id,
+                                                        "user_id": st.session_state.get(
+                                                            "student_user_id"
+                                                        ),
+                                                        "requester_name": (
+                                                            recovery_name.strip()
+                                                        ),
+                                                        "requester_contact": (
+                                                            recovery_contact.strip()
+                                                        ),
+                                                        "message": (
+                                                            recovery_message.strip()
+                                                        )
+                                                    },
+                                                    returning="minimal"
+                                                ).execute()
+
+                                                st.success(
+                                                    "Recovery request submitted "
+                                                    "successfully!"
+                                                )
+
+                                                st.session_state[
+                                                    "selected_recovery_item_id"
+                                                ] = None
+
+                                                st.rerun()
+
+                                            except Exception as submit_error:
+
+                                                st.error(
+                                                    "Unable to submit recovery request."
+                                                )
+                                                st.code(str(submit_error))
+
         except Exception as error:
 
             st.error(
@@ -892,9 +1008,6 @@ elif selected_page == "🤖 AI Image Search":
         )
 
     st.divider()
-
-
-
 
 
 # --------------------------------------------------
@@ -920,9 +1033,7 @@ elif selected_page == "🔍 Search Items":
 
     try:
 
-        # --------------------------------------------------
         # LOAD ALL FOUND ITEMS
-        # --------------------------------------------------
 
         response = (
             supabase.table("found_items")
@@ -939,9 +1050,7 @@ elif selected_page == "🔍 Search Items":
 
         else:
 
-            # --------------------------------------------------
             # CATEGORY DETECTION
-            # --------------------------------------------------
 
             def get_item_category(item):
 
@@ -977,10 +1086,7 @@ elif selected_page == "🔍 Search Items":
                 else:
                     return "Other"
 
-            # --------------------------------------------------
             # LOCATION ALIASES
-            # Add more campus short forms here when needed.
-            # --------------------------------------------------
 
             LOCATION_ALIASES = [
                 {"vu", "vignan", "vignan university"},
@@ -996,9 +1102,7 @@ elif selected_page == "🔍 Search Items":
                     str(location).lower()
                 ).strip()
 
-            # --------------------------------------------------
             # SMART LOCATION MATCHING
-            # --------------------------------------------------
 
             def locations_match(location1, location2):
 
@@ -1008,24 +1112,16 @@ elif selected_page == "🔍 Search Items":
                 if not a or not b:
                     return False
 
-                # Exact match
-
                 if a == b:
                     return True
-
-                # Alias matching
 
                 for group in LOCATION_ALIASES:
 
                     if a in group and b in group:
                         return True
 
-                # Partial phrase matching
-
                 if a in b or b in a:
                     return True
-
-                # Fuzzy spelling matching
 
                 similarity = SequenceMatcher(
                     None, a, b
@@ -1033,21 +1129,15 @@ elif selected_page == "🔍 Search Items":
 
                 return similarity >= 0.75
 
-            # --------------------------------------------------
             # AUTOCOMPLETE CALLBACKS
-            # --------------------------------------------------
 
             def choose_category(value):
-
                 st.session_state["category_autocomplete"] = value
 
             def choose_location(value):
-
                 st.session_state["location_autocomplete"] = value
 
-            # --------------------------------------------------
             # MAIN TEXT SEARCH
-            # --------------------------------------------------
 
             st.subheader("🔎 Search Items")
 
@@ -1057,9 +1147,7 @@ elif selected_page == "🔍 Search Items":
                 key="advanced_text_search"
             )
 
-            # --------------------------------------------------
             # FILTER SECTION
-            # --------------------------------------------------
 
             st.subheader("🎯 Filter Your Search")
 
@@ -1075,9 +1163,7 @@ elif selected_page == "🔍 Search Items":
                 "Other"
             ]
 
-            # --------------------------------------------------
             # CATEGORY AUTOCOMPLETE
-            # --------------------------------------------------
 
             with col1:
 
@@ -1111,12 +1197,9 @@ elif selected_page == "🔍 Search Items":
                             )
 
                     else:
-
                         st.caption("No matching categories found.")
 
-            # --------------------------------------------------
             # GET AVAILABLE LOCATIONS
-            # --------------------------------------------------
 
             locations = sorted(
                 set(
@@ -1127,9 +1210,7 @@ elif selected_page == "🔍 Search Items":
                 key=str.lower
             )
 
-            # --------------------------------------------------
             # LOCATION AUTOCOMPLETE
-            # --------------------------------------------------
 
             with col2:
 
@@ -1145,8 +1226,6 @@ elif selected_page == "🔍 Search Items":
                     if location_query.strip().lower()
                     in location.lower()
                 ]
-
-                # Also suggest known aliases
 
                 if location_query.strip():
 
@@ -1178,12 +1257,9 @@ elif selected_page == "🔍 Search Items":
                             )
 
                     else:
-
                         st.caption("No matching locations found.")
 
-            # --------------------------------------------------
-            # GET SELECTED FILTER VALUES
-            # --------------------------------------------------
+            # SELECTED FILTER VALUES
 
             selected_category = (
                 category_query.strip()
@@ -1193,9 +1269,7 @@ elif selected_page == "🔍 Search Items":
 
             selected_location = location_query.strip()
 
-            # --------------------------------------------------
             # DATE FILTER
-            # --------------------------------------------------
 
             date_filter_available = any(
                 item.get("created_at")
@@ -1229,15 +1303,11 @@ elif selected_page == "🔍 Search Items":
 
             st.divider()
 
-            # --------------------------------------------------
             # APPLY ALL FILTERS
-            # --------------------------------------------------
 
             filtered_items = []
 
             for item in all_search_items:
-
-                # TEXT SEARCH
 
                 if search_term.strip():
 
@@ -1252,8 +1322,6 @@ elif selected_page == "🔍 Search Items":
                     if term not in searchable_text:
                         continue
 
-                # CATEGORY FILTER
-
                 item_category = get_item_category(item)
 
                 if (
@@ -1261,8 +1329,6 @@ elif selected_page == "🔍 Search Items":
                     and item_category != selected_category
                 ):
                     continue
-
-                # SMART LOCATION FILTER
 
                 if selected_location:
 
@@ -1273,8 +1339,6 @@ elif selected_page == "🔍 Search Items":
                         selected_location
                     ):
                         continue
-
-                # DATE FILTER
 
                 if date_filter_available and (
                     selected_start_date or selected_end_date
@@ -1308,9 +1372,7 @@ elif selected_page == "🔍 Search Items":
 
                 filtered_items.append(item)
 
-            # --------------------------------------------------
             # DISPLAY SEARCH RESULTS
-            # --------------------------------------------------
 
             st.subheader("🔎 Search Results")
 
@@ -1370,6 +1432,152 @@ elif selected_page == "🔍 Search Items":
                                     f"{str(item.get('created_at'))[:10]}"
                                 )
 
+                        # ----------------------------------
+                        # REQUEST THIS PARTICULAR ITEM
+                        # ----------------------------------
+
+                        item_id = item.get("id")
+
+                        logged_in = st.session_state.get(
+                            "student_logged_in", False
+                        )
+
+                        if st.button(
+                            "🙋 This is My Item",
+                            key=f"text_recover_{item_id}",
+                            use_container_width=True
+                        ):
+
+                            if not logged_in:
+
+                                st.warning(
+                                    "Please login to your Student "
+                                    "Account before requesting recovery."
+                                )
+
+                            else:
+
+                                st.session_state[
+                                    "selected_recovery_item_id"
+                                ] = item_id
+
+                                st.rerun()
+
+                        # FORM FOR ONLY THE SELECTED ITEM
+
+                        if (
+                            st.session_state.get(
+                                "selected_recovery_item_id"
+                            ) == item_id
+                        ):
+
+                            if not logged_in:
+
+                                st.warning(
+                                    "Please login to continue."
+                                )
+
+                            else:
+
+                                st.subheader(
+                                    f"📩 Request Recovery: "
+                                    f"{item.get('item_name', '')}"
+                                )
+
+                                with st.form(
+                                    f"text_recovery_form_{item_id}"
+                                ):
+
+                                    recovery_name = st.text_input(
+                                        "Your Name",
+                                        max_chars=100
+                                    )
+
+                                    recovery_contact = st.text_input(
+                                        "Your Contact (Email or Phone)",
+                                        max_chars=200
+                                    )
+
+                                    recovery_message = st.text_area(
+                                        "Explain why this item belongs to you",
+                                        max_chars=1000,
+                                        placeholder=(
+                                            "Describe the item and "
+                                            "how you lost it."
+                                        )
+                                    )
+
+                                    submit_recovery = st.form_submit_button(
+                                        "Submit Recovery Request"
+                                    )
+
+                                if submit_recovery:
+
+                                    if not recovery_name.strip():
+
+                                        st.warning(
+                                            "Please enter your name."
+                                        )
+
+                                    elif not recovery_contact.strip():
+
+                                        st.warning(
+                                            "Please enter your contact details."
+                                        )
+
+                                    elif not recovery_message.strip():
+
+                                        st.warning(
+                                            "Please explain why this item "
+                                            "belongs to you."
+                                        )
+
+                                    else:
+
+                                        try:
+
+                                            supabase.table(
+                                                "recovery_requests"
+                                            ).insert(
+                                                {
+                                                    "item_id": item_id,
+                                                    "user_id": (
+                                                        st.session_state.get(
+                                                            "student_user_id"
+                                                        )
+                                                    ),
+                                                    "requester_name": (
+                                                        recovery_name.strip()
+                                                    ),
+                                                    "requester_contact": (
+                                                        recovery_contact.strip()
+                                                    ),
+                                                    "message": (
+                                                        recovery_message.strip()
+                                                    )
+                                                },
+                                                returning="minimal"
+                                            ).execute()
+
+                                            st.success(
+                                                "Recovery request submitted "
+                                                "successfully!"
+                                            )
+
+                                            st.session_state[
+                                                "selected_recovery_item_id"
+                                            ] = None
+
+                                            st.rerun()
+
+                                        except Exception as submit_error:
+
+                                            st.error(
+                                                "Unable to submit recovery request."
+                                            )
+
+                                            st.code(str(submit_error))
+
             else:
 
                 st.warning(
@@ -1383,7 +1591,6 @@ elif selected_page == "🔍 Search Items":
         st.code(str(error))
 
     st.divider()
-
 
 # --------------------------------------------------
 # 9. DISPLAY ALL FOUND ITEMS
