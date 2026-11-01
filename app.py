@@ -114,7 +114,11 @@ supabase = create_client(
     st.secrets["SUPABASE_KEY"]
 )
 
-# Separate Admin client
+
+# --------------------------------------------------
+# SEPARATE ADMIN CLIENT
+# --------------------------------------------------
+
 admin_supabase = None
 
 # Restore admin login session after Streamlit rerun
@@ -141,7 +145,62 @@ if (
         st.session_state.admin_logged_in = False
 
 
-# SQLite Database Connection
+# --------------------------------------------------
+# SEPARATE STUDENT CLIENT
+# --------------------------------------------------
+
+student_supabase = None
+
+# Restore student login session after Streamlit rerun
+if (
+    st.session_state.get("student_access_token")
+    and st.session_state.get("student_refresh_token")
+):
+    try:
+        student_supabase = create_client(
+            st.secrets["SUPABASE_URL"],
+            st.secrets["SUPABASE_KEY"]
+        )
+
+        student_supabase.auth.set_session(
+            st.session_state.student_access_token,
+            st.session_state.student_refresh_token
+        )
+
+    except Exception:
+        student_supabase = None
+
+        st.session_state.student_access_token = None
+        st.session_state.student_refresh_token = None
+        st.session_state.student_logged_in = False
+        st.session_state.student_user_id = None
+        st.session_state.student_email = None
+
+
+# --------------------------------------------------
+# INITIALIZE STUDENT SESSION VARIABLES
+# --------------------------------------------------
+
+if "student_logged_in" not in st.session_state:
+    st.session_state.student_logged_in = False
+
+if "student_access_token" not in st.session_state:
+    st.session_state.student_access_token = None
+
+if "student_refresh_token" not in st.session_state:
+    st.session_state.student_refresh_token = None
+
+if "student_user_id" not in st.session_state:
+    st.session_state.student_user_id = None
+
+if "student_email" not in st.session_state:
+    st.session_state.student_email = None
+
+
+# --------------------------------------------------
+# SQLITE DATABASE CONNECTION
+# --------------------------------------------------
+
 connection = sqlite3.connect("findit.db")
 cursor = connection.cursor()
 
@@ -156,7 +215,11 @@ cursor.execute("""
 
 connection.commit()
 
-# Add image_path column for existing databases
+
+# --------------------------------------------------
+# ADD IMAGE PATH COLUMN FOR EXISTING DATABASES
+# --------------------------------------------------
+
 cursor.execute("PRAGMA table_info(found_items)")
 columns = [column[1] for column in cursor.fetchall()]
 
@@ -164,6 +227,7 @@ if "image_path" not in columns:
     cursor.execute(
         "ALTER TABLE found_items ADD COLUMN image_path TEXT"
     )
+
     connection.commit()
 # --------------------------------------------------
 # 3. Load CLIP AI Model
@@ -238,6 +302,7 @@ def find_similar_items(query_image, image_items):
 
     return ranked_items
 
+
 # --------------------------------------------------
 # 5. TOP NAVIGATION AND WEBSITE PAGES
 # --------------------------------------------------
@@ -299,6 +364,8 @@ div[data-testid="stRadio"] label p {
 """, unsafe_allow_html=True)
 
 
+# TOP NAVIGATION
+
 selected_page = st.radio(
     "Navigation",
     [
@@ -309,6 +376,7 @@ selected_page = st.radio(
         "📋 All Found Items",
         "📩 Recovery Requests",
         "📤 Share",
+        "👤 Student Login",
         "🔐 Admin"
     ],
     horizontal=True,
@@ -449,6 +517,13 @@ if selected_page == "🏠 Home":
             "that may belong to you."
         )
 
+        st.markdown("### 👤 Student Account")
+
+        st.write(
+            "Students can create an account, manage "
+            "their profile, and track recovery requests."
+        )
+
         st.markdown("### 🔐 Admin Dashboard")
 
         st.write(
@@ -536,7 +611,6 @@ elif selected_page == "📤 Share":
         file_name="FindItAI_QR_Code.png",
         mime="image/png"
     )
-
 # --------------------------------------------------
 # 6. REPORT A FOUND ITEM
 # --------------------------------------------------
@@ -1517,10 +1591,426 @@ elif selected_page == "📩 Recovery Requests":
 
 
 
+
 # --------------------------------------------------
-# 11. ADMIN LOGIN, RECOVERY DASHBOARD
+# 11. STUDENT LOGIN, ADMIN LOGIN, RECOVERY DASHBOARD
 #     AND ADVANCED ANALYTICS
 # --------------------------------------------------
+
+
+# ==================================================
+# STUDENT SIGNUP, LOGIN, PROFILE AND MY REQUESTS
+# ==================================================
+
+elif selected_page == "👤 Student Login":
+
+    st.title("👤 Student Account")
+    st.divider()
+
+    if not st.session_state.get("student_logged_in", False):
+
+        login_tab, signup_tab = st.tabs(
+            ["🔐 Login", "📝 Sign Up"]
+        )
+
+        # ------------------------------------------
+        # STUDENT LOGIN
+        # ------------------------------------------
+
+        with login_tab:
+
+            st.subheader("Student Login")
+
+            with st.form("student_login_form"):
+
+                student_email = st.text_input("Email")
+
+                student_password = st.text_input(
+                    "Password",
+                    type="password"
+                )
+
+                login_button = st.form_submit_button("Login")
+
+            if login_button:
+
+                if not student_email.strip() or not student_password:
+
+                    st.warning("Please enter email and password.")
+
+                else:
+
+                    try:
+
+                        login_client = create_client(
+                            st.secrets["SUPABASE_URL"],
+                            st.secrets["SUPABASE_KEY"]
+                        )
+
+                        login_response = (
+                            login_client.auth.sign_in_with_password({
+                                "email": student_email.strip(),
+                                "password": student_password
+                            })
+                        )
+
+                        logged_in_user = login_response.user
+                        student_session = login_response.session
+
+                        if logged_in_user and student_session:
+
+                            st.session_state.student_access_token = (
+                                student_session.access_token
+                            )
+
+                            st.session_state.student_refresh_token = (
+                                student_session.refresh_token
+                            )
+
+                            st.session_state.student_user_id = (
+                                str(logged_in_user.id)
+                            )
+
+                            st.session_state.student_email = (
+                                logged_in_user.email
+                            )
+
+                            st.session_state.student_logged_in = True
+
+                            st.success("Student login successful!")
+                            st.rerun()
+
+                        else:
+
+                            st.error("Login failed. Please try again.")
+
+                    except Exception as login_error:
+
+                        st.error("Invalid email or password.")
+                        st.code(str(login_error))
+
+        # ------------------------------------------
+        # STUDENT SIGNUP
+        # ------------------------------------------
+
+        with signup_tab:
+
+            st.subheader("Create Student Account")
+
+            with st.form("student_signup_form"):
+
+                signup_name = st.text_input("Full Name")
+                signup_email = st.text_input("Email")
+                signup_phone = st.text_input("Phone Number")
+
+                signup_password = st.text_input(
+                    "Create Password",
+                    type="password"
+                )
+
+                confirm_password = st.text_input(
+                    "Confirm Password",
+                    type="password"
+                )
+
+                signup_button = st.form_submit_button("Create Account")
+
+            if signup_button:
+
+                if (
+                    not signup_name.strip()
+                    or not signup_email.strip()
+                    or not signup_password
+                ):
+
+                    st.warning("Please fill all required fields.")
+
+                elif len(signup_password) < 6:
+
+                    st.warning(
+                        "Password must contain at least 6 characters."
+                    )
+
+                elif signup_password != confirm_password:
+
+                    st.error("Passwords do not match.")
+
+                else:
+
+                    try:
+
+                        signup_client = create_client(
+                            st.secrets["SUPABASE_URL"],
+                            st.secrets["SUPABASE_KEY"]
+                        )
+
+                        signup_response = signup_client.auth.sign_up({
+                            "email": signup_email.strip(),
+                            "password": signup_password
+                        })
+
+                        new_user = signup_response.user
+                        new_session = signup_response.session
+
+                        if new_user and new_session:
+
+                            student_client = create_client(
+                                st.secrets["SUPABASE_URL"],
+                                st.secrets["SUPABASE_KEY"]
+                            )
+
+                            student_client.auth.set_session(
+                                new_session.access_token,
+                                new_session.refresh_token
+                            )
+
+                            student_client.table(
+                                "student_profiles"
+                            ).upsert({
+                                "id": str(new_user.id),
+                                "full_name": signup_name.strip(),
+                                "email": signup_email.strip(),
+                                "phone": signup_phone.strip()
+                            }).execute()
+
+                            st.session_state.student_access_token = (
+                                new_session.access_token
+                            )
+
+                            st.session_state.student_refresh_token = (
+                                new_session.refresh_token
+                            )
+
+                            st.session_state.student_user_id = (
+                                str(new_user.id)
+                            )
+
+                            st.session_state.student_email = (
+                                new_user.email
+                            )
+
+                            st.session_state.student_logged_in = True
+
+                            st.success("Account created successfully!")
+                            st.rerun()
+
+                        else:
+
+                            st.success(
+                                "Account created! Please verify your "
+                                "email and then login."
+                            )
+
+                    except Exception as signup_error:
+
+                        st.error("Unable to create account.")
+                        st.code(str(signup_error))
+
+    # ----------------------------------------------
+    # STUDENT PROFILE AND RECOVERY REQUESTS
+    # ----------------------------------------------
+
+    else:
+
+        st.success(
+            f"Logged in as "
+            f"{st.session_state.get('student_email', '')}"
+        )
+
+        student_uid = st.session_state.get("student_user_id")
+
+        if student_supabase is None:
+
+            st.error("Student session expired. Please login again.")
+
+            st.session_state.student_logged_in = False
+            st.session_state.student_access_token = None
+            st.session_state.student_refresh_token = None
+            st.session_state.student_user_id = None
+            st.session_state.student_email = None
+
+            st.rerun()
+
+        else:
+
+            # --------------------------------------
+            # MY PROFILE
+            # --------------------------------------
+
+            st.subheader("👤 My Profile")
+
+            try:
+
+                profile_response = (
+                    student_supabase.table("student_profiles")
+                    .select("full_name, email, phone")
+                    .eq("id", student_uid)
+                    .maybe_single()
+                    .execute()
+                )
+
+                profile = profile_response.data or {}
+
+                with st.form("student_profile_form"):
+
+                    profile_name = st.text_input(
+                        "Full Name",
+                        value=profile.get("full_name", "")
+                    )
+
+                    st.text_input(
+                        "Email",
+                        value=st.session_state.student_email or "",
+                        disabled=True
+                    )
+
+                    profile_phone = st.text_input(
+                        "Phone Number",
+                        value=profile.get("phone", "") or ""
+                    )
+
+                    save_profile = st.form_submit_button(
+                        "Save Profile"
+                    )
+
+                if save_profile:
+
+                    if not profile_name.strip():
+
+                        st.warning("Please enter your name.")
+
+                    else:
+
+                        student_supabase.table(
+                            "student_profiles"
+                        ).upsert({
+                            "id": student_uid,
+                            "full_name": profile_name.strip(),
+                            "email": st.session_state.student_email,
+                            "phone": profile_phone.strip()
+                        }).execute()
+
+                        st.success("Profile updated successfully!")
+                        st.rerun()
+
+            except Exception as profile_error:
+
+                st.error("Unable to load student profile.")
+                st.code(str(profile_error))
+
+            st.divider()
+
+            # --------------------------------------
+            # MY RECOVERY REQUESTS
+            # --------------------------------------
+
+            st.subheader("📩 My Recovery Requests")
+
+            try:
+
+                my_requests_response = (
+                    student_supabase.table("recovery_requests")
+                    .select(
+                        "id, item_id, message, status, created_at, "
+                        "found_items(item_name, location)"
+                    )
+                    .eq("user_id", student_uid)
+                    .order("created_at", desc=True)
+                    .execute()
+                )
+
+                my_requests = my_requests_response.data or []
+
+                if my_requests:
+
+                    st.write(
+                        f"You have submitted "
+                        f"{len(my_requests)} request(s)."
+                    )
+
+                    for request in my_requests:
+
+                        item_details = request.get("found_items") or {}
+
+                        item_name = item_details.get(
+                            "item_name",
+                            "Unknown item"
+                        )
+
+                        item_location = item_details.get(
+                            "location",
+                            "Not specified"
+                        )
+
+                        current_status = request.get(
+                            "status",
+                            "Pending"
+                        )
+
+                        with st.expander(
+                            f"📦 {item_name} — {current_status}"
+                        ):
+
+                            st.write("**Item:**", item_name)
+
+                            st.write(
+                                "**Location:**",
+                                item_location
+                            )
+
+                            st.write(
+                                "**Your Message:**",
+                                request.get("message", "")
+                            )
+
+                            st.write(
+                                "**Status:**",
+                                current_status
+                            )
+
+                            st.write(
+                                "**Submitted:**",
+                                str(request.get("created_at", ""))[:10]
+                            )
+
+                else:
+
+                    st.info(
+                        "You have not submitted any recovery "
+                        "requests yet."
+                    )
+
+            except Exception as requests_error:
+
+                st.error("Unable to load your recovery requests.")
+                st.code(str(requests_error))
+
+            st.divider()
+
+            # --------------------------------------
+            # STUDENT LOGOUT
+            # --------------------------------------
+
+            if st.button("🚪 Student Logout"):
+
+                try:
+                    student_supabase.auth.sign_out()
+                except Exception:
+                    pass
+
+                st.session_state.student_logged_in = False
+                st.session_state.student_access_token = None
+                st.session_state.student_refresh_token = None
+                st.session_state.student_user_id = None
+                st.session_state.student_email = None
+
+                st.success("Logged out successfully!")
+                st.rerun()
+
+
+# ==================================================
+# ADMIN LOGIN AND DASHBOARD
+# ==================================================
 
 elif selected_page == "🔐 Admin":
 
@@ -1552,6 +2042,7 @@ elif selected_page == "🔐 Admin":
         if login_button:
 
             if not admin_email.strip() or not admin_password:
+
                 st.warning("Please enter email and password.")
 
             else:
@@ -1639,9 +2130,9 @@ elif selected_page == "🔐 Admin":
 
                 recovery_requests = requests_response.data or []
 
-                # --------------------------------------------------
+                # ----------------------------------
                 # RECOVERY REQUEST STATISTICS
-                # --------------------------------------------------
+                # ----------------------------------
 
                 total_requests = len(recovery_requests)
 
@@ -1683,9 +2174,9 @@ elif selected_page == "🔐 Admin":
 
                 st.divider()
 
-                # --------------------------------------------------
+                # ----------------------------------
                 # ADVANCED ANALYTICS
-                # --------------------------------------------------
+                # ----------------------------------
 
                 st.header("📈 Advanced Analytics Dashboard")
 
@@ -1731,7 +2222,8 @@ elif selected_page == "🔐 Admin":
                 st.progress(int(round(recovery_rate)))
 
                 st.caption(
-                    "Recovery Success Rate = Returned requests / Total requests."
+                    "Recovery Success Rate = Returned requests / "
+                    "Total requests."
                 )
 
                 st.divider()
@@ -1968,9 +2460,9 @@ elif selected_page == "🔐 Admin":
 
                 st.divider()
 
-                # --------------------------------------------------
+                # ----------------------------------
                 # DOWNLOAD RECOVERY REQUESTS CSV
-                # --------------------------------------------------
+                # ----------------------------------
 
                 st.subheader("📥 Download Recovery Report")
 
@@ -2013,9 +2505,9 @@ elif selected_page == "🔐 Admin":
 
                 st.divider()
 
-                # --------------------------------------------------
+                # ----------------------------------
                 # SEARCH AND FILTER REQUESTS
-                # --------------------------------------------------
+                # ----------------------------------
 
                 st.subheader("🔎 Search and Filter Requests")
 
@@ -2177,9 +2669,9 @@ elif selected_page == "🔐 Admin":
                 st.error("Unable to load recovery requests.")
                 st.code(str(dashboard_error))
 
-            # --------------------------------------------------
-            # LOGOUT
-            # --------------------------------------------------
+            # --------------------------------------
+            # ADMIN LOGOUT
+            # --------------------------------------
 
             if st.button("Logout"):
 
