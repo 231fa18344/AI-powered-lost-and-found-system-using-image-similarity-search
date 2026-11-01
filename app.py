@@ -1587,12 +1587,7 @@ elif selected_page == "📩 Recovery Requests":
         st.code(str(error))
 
     st.divider()
-
-
-
-
-
-
+    
 # --------------------------------------------------
 # 11. STUDENT LOGIN, ADMIN LOGIN, RECOVERY DASHBOARD
 #     AND ADVANCED ANALYTICS
@@ -1655,8 +1650,17 @@ elif selected_page == "👤 Student Login":
                             })
                         )
 
-                        logged_in_user = login_response.user
-                        student_session = login_response.session
+                        logged_in_user = (
+                            getattr(login_response, "user", None)
+                            if login_response is not None
+                            else None
+                        )
+
+                        student_session = (
+                            getattr(login_response, "session", None)
+                            if login_response is not None
+                            else None
+                        )
 
                         if logged_in_user and student_session:
 
@@ -1761,8 +1765,17 @@ elif selected_page == "👤 Student Login":
                             "password": signup_password
                         })
 
-                        new_user = signup_response.user
-                        new_session = signup_response.session
+                        new_user = (
+                            getattr(signup_response, "user", None)
+                            if signup_response is not None
+                            else None
+                        )
+
+                        new_session = (
+                            getattr(signup_response, "session", None)
+                            if signup_response is not None
+                            else None
+                        )
 
                         if new_user and new_session:
 
@@ -1806,11 +1819,18 @@ elif selected_page == "👤 Student Login":
                             st.success("Account created successfully!")
                             st.rerun()
 
-                        else:
+                        elif new_user:
 
                             st.success(
-                                "Account created! Please verify your "
-                                "email and then login."
+                                "Account created successfully! "
+                                "Please login using your email and password."
+                            )
+
+                        else:
+
+                            st.error(
+                                "Account creation did not return a user. "
+                                "Please try again."
                             )
 
                     except Exception as signup_error:
@@ -1857,17 +1877,26 @@ elif selected_page == "👤 Student Login":
                     student_supabase.table("student_profiles")
                     .select("full_name, email, phone")
                     .eq("id", student_uid)
-                    .maybe_single()
                     .execute()
                 )
 
-                profile = profile_response.data or {}
+                profile_rows = (
+                    getattr(profile_response, "data", None)
+                    if profile_response is not None
+                    else None
+                ) or []
+
+                profile = (
+                    profile_rows[0]
+                    if profile_rows
+                    else {}
+                )
 
                 with st.form("student_profile_form"):
 
                     profile_name = st.text_input(
                         "Full Name",
-                        value=profile.get("full_name", "")
+                        value=profile.get("full_name", "") or ""
                     )
 
                     st.text_input(
@@ -1904,17 +1933,25 @@ elif selected_page == "👤 Student Login":
 
                     else:
 
-                        student_supabase.table(
-                            "student_profiles"
-                        ).upsert({
-                            "id": student_uid,
-                            "full_name": profile_name.strip(),
-                            "email": st.session_state.student_email,
-                            "phone": profile_phone.strip()
-                        }).execute()
+                        save_response = (
+                            student_supabase.table("student_profiles")
+                            .upsert({
+                                "id": student_uid,
+                                "full_name": profile_name.strip(),
+                                "email": st.session_state.student_email,
+                                "phone": profile_phone.strip()
+                            })
+                            .execute()
+                        )
 
-                        st.success("Profile updated successfully!")
-                        st.rerun()
+                        if save_response is not None:
+
+                            st.success("Profile updated successfully!")
+                            st.rerun()
+
+                        else:
+
+                            st.error("Profile could not be saved.")
 
             except Exception as profile_error:
 
@@ -1942,7 +1979,11 @@ elif selected_page == "👤 Student Login":
                     .execute()
                 )
 
-                my_requests = my_requests_response.data or []
+                my_requests = (
+                    getattr(my_requests_response, "data", None)
+                    if my_requests_response is not None
+                    else None
+                ) or []
 
                 if my_requests:
 
@@ -1954,6 +1995,13 @@ elif selected_page == "👤 Student Login":
                     for request in my_requests:
 
                         item_details = request.get("found_items") or {}
+
+                        if isinstance(item_details, list):
+                            item_details = (
+                                item_details[0]
+                                if item_details
+                                else {}
+                            )
 
                         item_name = item_details.get(
                             "item_name",
@@ -2082,8 +2130,17 @@ elif selected_page == "🔐 Admin":
                         "password": admin_password
                     })
 
-                    logged_in_user = login_response.user
-                    admin_session = login_response.session
+                    logged_in_user = (
+                        getattr(login_response, "user", None)
+                        if login_response is not None
+                        else None
+                    )
+
+                    admin_session = (
+                        getattr(login_response, "session", None)
+                        if login_response is not None
+                        else None
+                    )
 
                     if (
                         logged_in_user
@@ -2151,7 +2208,11 @@ elif selected_page == "🔐 Admin":
                     .execute()
                 )
 
-                recovery_requests = requests_response.data or []
+                recovery_requests = (
+                    getattr(requests_response, "data", None)
+                    if requests_response is not None
+                    else None
+                ) or []
 
                 # ----------------------------------
                 # RECOVERY REQUEST STATISTICS
@@ -2288,6 +2349,13 @@ elif selected_page == "🔐 Admin":
 
                     item_details = request.get("found_items") or {}
 
+                    if isinstance(item_details, list):
+                        item_details = (
+                            item_details[0]
+                            if item_details
+                            else {}
+                        )
+
                     item_name = item_details.get(
                         "item_name",
                         "Unknown item"
@@ -2325,6 +2393,13 @@ elif selected_page == "🔐 Admin":
                 for request in recovery_requests:
 
                     item_details = request.get("found_items") or {}
+
+                    if isinstance(item_details, list):
+                        item_details = (
+                            item_details[0]
+                            if item_details
+                            else {}
+                        )
 
                     location = item_details.get(
                         "location",
@@ -2466,6 +2541,13 @@ elif selected_page == "🔐 Admin":
 
                         item_details = request.get("found_items") or {}
 
+                        if isinstance(item_details, list):
+                            item_details = (
+                                item_details[0]
+                                if item_details
+                                else {}
+                            )
+
                         item_name = item_details.get(
                             "item_name",
                             "Unknown item"
@@ -2507,6 +2589,13 @@ elif selected_page == "🔐 Admin":
                 for request in recovery_requests:
 
                     item_details = request.get("found_items") or {}
+
+                    if isinstance(item_details, list):
+                        item_details = (
+                            item_details[0]
+                            if item_details
+                            else {}
+                        )
 
                     csv_writer.writerow([
                         request.get("id"),
@@ -2555,6 +2644,13 @@ elif selected_page == "🔐 Admin":
 
                     item_details = request.get("found_items") or {}
 
+                    if isinstance(item_details, list):
+                        item_details = (
+                            item_details[0]
+                            if item_details
+                            else {}
+                        )
+
                     item_name = item_details.get(
                         "item_name",
                         "Unknown item"
@@ -2590,6 +2686,13 @@ elif selected_page == "🔐 Admin":
                     for request in filtered_requests:
 
                         item_details = request.get("found_items") or {}
+
+                        if isinstance(item_details, list):
+                            item_details = (
+                                item_details[0]
+                                if item_details
+                                else {}
+                            )
 
                         item_name = item_details.get(
                             "item_name",
@@ -2708,6 +2811,13 @@ elif selected_page == "🔐 Admin":
                 st.session_state.admin_refresh_token = None
 
                 st.rerun()
+
+
+# --------------------------------------------------
+# 12. CLOSE DATABASE CONNECTION
+# --------------------------------------------------
+
+connection.close()
 # --------------------------------------------------
 # 12. CLOSE DATABASE CONNECTION
 # --------------------------------------------------
