@@ -1592,6 +1592,7 @@ elif selected_page == "📩 Recovery Requests":
 
 
 
+
 # --------------------------------------------------
 # 11. STUDENT LOGIN, ADMIN LOGIN, RECOVERY DASHBOARD
 #     AND ADVANCED ANALYTICS
@@ -1701,7 +1702,12 @@ elif selected_page == "👤 Student Login":
 
                 signup_name = st.text_input("Full Name")
                 signup_email = st.text_input("Email")
-                signup_phone = st.text_input("Phone Number")
+
+                signup_phone = st.text_input(
+                    "Phone Number",
+                    max_chars=10,
+                    placeholder="Enter 10-digit mobile number"
+                )
 
                 signup_password = st.text_input(
                     "Create Password",
@@ -1724,6 +1730,12 @@ elif selected_page == "👤 Student Login":
                 ):
 
                     st.warning("Please fill all required fields.")
+
+                elif not signup_phone.isdigit() or len(signup_phone) != 10:
+
+                    st.error(
+                        "Please enter a valid 10-digit phone number."
+                    )
 
                 elif len(signup_password) < 6:
 
@@ -1866,7 +1878,9 @@ elif selected_page == "👤 Student Login":
 
                     profile_phone = st.text_input(
                         "Phone Number",
-                        value=profile.get("phone", "") or ""
+                        value=profile.get("phone", "") or "",
+                        max_chars=10,
+                        placeholder="Enter 10-digit mobile number"
                     )
 
                     save_profile = st.form_submit_button(
@@ -1878,6 +1892,15 @@ elif selected_page == "👤 Student Login":
                     if not profile_name.strip():
 
                         st.warning("Please enter your name.")
+
+                    elif (
+                        not profile_phone.isdigit()
+                        or len(profile_phone) != 10
+                    ):
+
+                        st.error(
+                            "Please enter a valid 10-digit phone number."
+                        )
 
                     else:
 
@@ -2685,8 +2708,6 @@ elif selected_page == "🔐 Admin":
                 st.session_state.admin_refresh_token = None
 
                 st.rerun()
-
-
 # --------------------------------------------------
 # 12. CLOSE DATABASE CONNECTION
 # --------------------------------------------------
