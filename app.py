@@ -1891,6 +1891,7 @@ elif selected_page == "📩 Recovery Requests":
     st.divider()
     
 
+
 # --------------------------------------------------
 # 11. STUDENT LOGIN, SIGN UP, PROFILE,
 #     MY RECOVERY REQUESTS AND ADMIN DASHBOARD
@@ -2302,7 +2303,7 @@ elif selected_page == "👤 Student Login":
                     .select(
                         "id, item_id, requester_name, message, "
                         "status, created_at, "
-                        "found_items(item_name, location)"
+                        "found_items(item_name, location, image_path)"
                     )
                     .eq("user_id", student_uid)
                     .order("created_at", desc=True)
@@ -2334,6 +2335,23 @@ elif selected_page == "👤 Student Login":
                                 f"**Location:** "
                                 f"{item_details.get('location', 'Not specified')}"
                             )
+
+                            # SHOW FOUND ITEM PHOTO
+                            item_image = item_details.get("image_path")
+
+                            if item_image:
+
+                                st.image(
+                                    item_image,
+                                    caption="Found Item Photo",
+                                    width=250
+                                )
+
+                            else:
+
+                                st.info(
+                                    "No photo available for this item."
+                                )
 
                             st.write(
                                 f"**Message:** "
@@ -3080,13 +3098,21 @@ elif selected_page == "🔐 Admin":
                                 f"{item_details.get('location', 'Not available')}"
                             )
 
+                            # SHOW FOUND ITEM PHOTO IN ADMIN DASHBOARD
                             item_image = item_details.get("image_path")
 
                             if item_image:
 
                                 st.image(
                                     item_image,
+                                    caption="Found Item Photo",
                                     width=250
+                                )
+
+                            else:
+
+                                st.info(
+                                    "No photo available for this item."
                                 )
 
                             st.divider()
