@@ -726,6 +726,7 @@ elif selected_page == "📦 Report Item":
                 "Please fill in all required fields."
             )
 
+
 # --------------------------------------------------
 # 7. AI IMAGE SEARCH
 # --------------------------------------------------
@@ -866,6 +867,7 @@ elif selected_page == "🤖 AI Image Search":
                             # ----------------------------------
 
                             item_id = item.get("id")
+
                             logged_in = st.session_state.get(
                                 "student_logged_in", False
                             )
@@ -877,19 +879,23 @@ elif selected_page == "🤖 AI Image Search":
                             ):
 
                                 if not logged_in:
+
                                     st.warning(
                                         "Please login to your Student "
                                         "Account before requesting recovery."
                                     )
 
                                 else:
+
                                     st.session_state[
                                         "selected_recovery_item_id"
                                     ] = item_id
 
                                     st.rerun()
 
-                            # Show form only for selected item
+                            # ----------------------------------
+                            # RECOVERY FORM FOR SELECTED ITEM
+                            # ----------------------------------
 
                             if (
                                 st.session_state.get(
@@ -936,32 +942,49 @@ elif selected_page == "🤖 AI Image Search":
                                     if submit_recovery:
 
                                         if not recovery_name.strip():
+
                                             st.warning(
                                                 "Please enter your name."
                                             )
 
                                         elif not recovery_contact.strip():
+
                                             st.warning(
                                                 "Please enter your contact details."
                                             )
 
                                         elif not recovery_message.strip():
+
                                             st.warning(
                                                 "Please explain why this item "
                                                 "belongs to you."
+                                            )
+
+                                        elif (
+                                            not st.session_state.get(
+                                                "student_user_id"
+                                            )
+                                            or student_supabase is None
+                                        ):
+
+                                            st.error(
+                                                "Student session expired. "
+                                                "Please login again."
                                             )
 
                                         else:
 
                                             try:
 
-                                                supabase.table(
+                                                student_supabase.table(
                                                     "recovery_requests"
                                                 ).insert(
                                                     {
                                                         "item_id": item_id,
-                                                        "user_id": st.session_state.get(
-                                                            "student_user_id"
+                                                        "user_id": (
+                                                            st.session_state.get(
+                                                                "student_user_id"
+                                                            )
                                                         ),
                                                         "requester_name": (
                                                             recovery_name.strip()
@@ -992,6 +1015,7 @@ elif selected_page == "🤖 AI Image Search":
                                                 st.error(
                                                     "Unable to submit recovery request."
                                                 )
+
                                                 st.code(str(submit_error))
 
         except Exception as error:
@@ -1463,7 +1487,9 @@ elif selected_page == "🔍 Search Items":
 
                                 st.rerun()
 
+                        # ----------------------------------
                         # FORM FOR ONLY THE SELECTED ITEM
+                        # ----------------------------------
 
                         if (
                             st.session_state.get(
@@ -1532,11 +1558,23 @@ elif selected_page == "🔍 Search Items":
                                             "belongs to you."
                                         )
 
+                                    elif (
+                                        not st.session_state.get(
+                                            "student_user_id"
+                                        )
+                                        or student_supabase is None
+                                    ):
+
+                                        st.error(
+                                            "Student session expired. "
+                                            "Please login again."
+                                        )
+
                                     else:
 
                                         try:
 
-                                            supabase.table(
+                                            student_supabase.table(
                                                 "recovery_requests"
                                             ).insert(
                                                 {
