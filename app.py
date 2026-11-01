@@ -2200,4 +2200,3 @@ elif selected_page == "🔐 Admin":
 # --------------------------------------------------
 
 connection.close()
-                st.rerun()
