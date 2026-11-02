@@ -2039,6 +2039,7 @@ elif selected_page == "📩 Recovery Requests":
     st.divider()
     
 
+
 # --------------------------------------------------
 # 11. STUDENT LOGIN, SIGN UP, PROFILE,
 #     MY RECOVERY REQUESTS AND ADMIN DASHBOARD
@@ -2438,120 +2439,6 @@ elif selected_page == "👤 Student Login":
             st.divider()
 
             # ------------------------------------------
-            # MY NOTIFICATIONS
-            # ------------------------------------------
-
-            st.subheader("🔔 My Notifications")
-
-            try:
-
-                notifications_response = (
-                    student_supabase.table("notifications")
-                    .select(
-                        "id, title, message, is_read, created_at"
-                    )
-                    .eq("user_id", student_uid)
-                    .order("created_at", desc=True)
-                    .execute()
-                )
-
-                my_notifications = notifications_response.data or []
-
-                unread_count = sum(
-                    1
-                    for notification in my_notifications
-                    if not notification.get("is_read", False)
-                )
-
-                if unread_count > 0:
-
-                    st.info(
-                        f"🔔 You have {unread_count} unread notification(s)."
-                    )
-
-                else:
-
-                    st.success("You are all caught up!")
-
-                if my_notifications:
-
-                    for notification in my_notifications:
-
-                        with st.container(border=True):
-
-                            if notification.get("is_read", False):
-
-                                st.write("✅ Read")
-
-                            else:
-
-                                st.write("🔔 **New Notification**")
-
-                            st.write(
-                                f"**{notification.get('title', 'Notification')}**"
-                            )
-
-                            st.write(
-                                notification.get("message", "")
-                            )
-
-                            st.caption(
-                                f"Date: {str(notification.get('created_at', ''))[:19]}"
-                            )
-
-                            if not notification.get("is_read", False):
-
-                                if st.button(
-                                    "✓ Mark as Read",
-                                    key=f"read_notification_{notification.get('id')}"
-                                ):
-
-                                    try:
-
-                                        (
-                                            student_supabase
-                                            .table("notifications")
-                                            .update({
-                                                "is_read": True
-                                            })
-                                            .eq(
-                                                "id",
-                                                notification.get("id")
-                                            )
-                                            .eq(
-                                                "user_id",
-                                                student_uid
-                                            )
-                                            .execute()
-                                        )
-
-                                        st.success(
-                                            "Notification marked as read!"
-                                        )
-
-                                        st.rerun()
-
-                                    except Exception as read_error:
-
-                                        st.error(
-                                            "Unable to mark notification as read."
-                                        )
-
-                                        st.code(str(read_error))
-
-                else:
-
-                    st.info("No notifications available yet.")
-
-            except Exception as notification_load_error:
-
-                st.error("Unable to load notifications.")
-
-                st.code(str(notification_load_error))
-
-            st.divider()
-
-            # ------------------------------------------
             # MY RECOVERY REQUESTS
             # ------------------------------------------
 
@@ -2671,6 +2558,8 @@ elif selected_page == "👤 Student Login":
                 st.success("Logged out successfully!")
 
                 st.rerun()
+
+
 # ==================================================
 # ADMIN LOGIN AND DASHBOARD
 # ==================================================
@@ -2690,9 +2579,6 @@ elif selected_page == "🔐 Admin":
 
     if "admin_refresh_token" not in st.session_state:
         st.session_state.admin_refresh_token = None
-
-    if "notification_error" not in st.session_state:
-        st.session_state.notification_error = None
 
     # ----------------------------------------------
     # ADMIN LOGIN
@@ -2821,30 +2707,6 @@ elif selected_page == "🔐 Admin":
         if admin_supabase is not None:
 
             st.subheader("📋 Recovery Requests Dashboard")
-
-            # ------------------------------------------
-            # SHOW SAVED NOTIFICATION ERROR
-            # ------------------------------------------
-
-            if st.session_state.notification_error:
-
-                st.error(
-                    "Notification could not be sent. "
-                    "The exact error is shown below:"
-                )
-
-                st.code(
-                    st.session_state.notification_error
-                )
-
-                if st.button(
-                    "Clear Notification Error",
-                    key="clear_notification_error"
-                ):
-
-                    st.session_state.notification_error = None
-
-                    st.rerun()
 
             try:
 
@@ -3472,14 +3334,7 @@ elif selected_page == "🔐 Admin":
                                 key=f"save_status_{request_id}"
                             ):
 
-                                previous_status = request.get(
-                                    "status",
-                                    "Pending"
-                                )
-
                                 try:
-
-                                    # UPDATE RECOVERY REQUEST STATUS
 
                                     (
                                         admin_supabase
@@ -3490,65 +3345,6 @@ elif selected_page == "🔐 Admin":
                                         .eq("id", request_id)
                                         .execute()
                                     )
-
-                                    # SEND NOTIFICATION TO STUDENT
-
-                                    student_user_id = request.get("user_id")
-
-                                    if (
-                                        student_user_id
-                                        and new_status != previous_status
-                                    ):
-
-                                        try:
-
-                                            notification_response = (
-                                                admin_supabase
-                                                .table("notifications")
-                                                .insert({
-                                                    "user_id": student_user_id,
-                                                    "request_id": request_id,
-                                                    "title": "Recovery Request Status Updated",
-                                                    "message": (
-                                                        f"Your recovery request status "
-                                                        f"has been updated from "
-                                                        f"{previous_status} to "
-                                                        f"{new_status}."
-                                                    )
-                                                })
-                                                .execute()
-                                            )
-
-                                            if not notification_response.data:
-
-                                                raise Exception(
-                                                    "Notification insert returned no data."
-                                                )
-
-                                            st.success(
-                                                "🔔 Student notification sent successfully!"
-                                            )
-
-                                            st.session_state.notification_error = None
-
-                                        except Exception as notification_error:
-
-                                            st.session_state.notification_error = (
-                                                str(notification_error)
-                                            )
-
-                                            print(
-                                                "NOTIFICATION INSERT ERROR:",
-                                                repr(notification_error)
-                                            )
-
-                                    elif not student_user_id:
-
-                                        st.warning(
-                                            "Status updated, but this request "
-                                            "has no linked student account. "
-                                            "Notification cannot be sent."
-                                        )
 
                                     st.success(
                                         "Request status updated successfully!"
@@ -3659,11 +3455,17 @@ elif selected_page == "🔐 Admin":
             st.session_state.admin_access_token = None
             st.session_state.admin_refresh_token = None
 
-            st.session_state.notification_error = None
-
             st.success("Admin logged out successfully!")
 
             st.rerun()
+
+
+# --------------------------------------------------
+# 12. CLOSE DATABASE CONNECTION
+# --------------------------------------------------
+
+connection.close()
+
 # --------------------------------------------------
 # 12. CLOSE DATABASE CONNECTION
 # --------------------------------------------------
