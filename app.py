@@ -304,18 +304,11 @@ def find_similar_items(query_image, image_items):
 
     return ranked_items
 
-
-
-
-
-
 # --------------------------------------------------
 # 5. TOP NAVIGATION AND WEBSITE PAGES
 # --------------------------------------------------
 
-# --------------------------------------------------
 # LOGIN STATE
-# --------------------------------------------------
 
 if "student_logged_in" not in st.session_state:
     st.session_state.student_logged_in = False
@@ -337,8 +330,6 @@ st.markdown("""
 .stApp {
     background-color: #f5f8fc;
 }
-
-/* LOGIN SCREEN */
 
 .welcome-container {
     min-height: 58vh;
@@ -377,8 +368,6 @@ st.markdown("""
     margin-bottom: 15px;
 }
 
-/* LOGIN BUTTONS */
-
 div.stButton > button {
     min-height: 58px;
     border-radius: 14px;
@@ -393,8 +382,6 @@ div.stButton > button:hover {
     border-color: #247b70;
     color: #247b70;
 }
-
-/* NAVIGATION */
 
 div[data-testid="stRadio"] > div[role="radiogroup"] {
     display: grid !important;
@@ -453,8 +440,6 @@ div[data-testid="stRadio"] label:has(input:checked) p {
     color: #ffffff !important;
     font-weight: 700;
 }
-
-/* RESPONSIVE DESIGN */
 
 @media screen and (max-width: 768px) {
 
@@ -517,7 +502,6 @@ div[data-testid="stRadio"] label:has(input:checked) p {
     .welcome-subtitle {
         font-size: 16px;
     }
-
 }
 
 </style>
@@ -557,11 +541,7 @@ if not (
 
     st.write("")
 
-    # CENTERED LOGIN BUTTONS
-
-    empty_left, center_col, empty_right = st.columns(
-        [1, 2, 1]
-    )
+    empty_left, center_col, empty_right = st.columns([1, 2, 1])
 
     with center_col:
 
@@ -574,11 +554,7 @@ if not (
                 use_container_width=True,
                 key="welcome_student_button"
             ):
-
-                st.session_state.selected_page = (
-                    "👤 Student Login"
-                )
-
+                st.session_state.selected_page = "👤 Student Login"
                 st.rerun()
 
         with admin_col:
@@ -588,11 +564,7 @@ if not (
                 use_container_width=True,
                 key="welcome_admin_button"
             ):
-
-                st.session_state.selected_page = (
-                    "🔐 Admin"
-                )
-
+                st.session_state.selected_page = "🔐 Admin"
                 st.rerun()
 
     st.markdown(
@@ -602,8 +574,6 @@ if not (
         "</p>",
         unsafe_allow_html=True
     )
-
-    # Show selected login page after clicking a button
 
     selected_page = st.session_state.selected_page
 
@@ -634,7 +604,7 @@ else:
             "👤 Student Login"
         ]
 
-    elif st.session_state.admin_logged_in:
+    else:
 
         st.caption("🔐 Administrator Account")
 
@@ -649,17 +619,13 @@ else:
             "🔐 Admin"
         ]
 
-    # Reset navigation when login role changes
-
     if (
         "previous_navigation_options" not in st.session_state
         or st.session_state.previous_navigation_options
         != navigation_options
     ):
 
-        st.session_state.previous_navigation_options = (
-            navigation_options
-        )
+        st.session_state.previous_navigation_options = navigation_options
 
         if "main_navigation" in st.session_state:
             del st.session_state["main_navigation"]
@@ -683,9 +649,7 @@ if selected_page == "🏠 Home":
 
     st.title("🔎 FindIt AI")
 
-    st.subheader(
-        "Your Smart Campus Lost-and-Found Assistant"
-    )
+    st.subheader("Your Smart Campus Lost-and-Found Assistant")
 
     st.write(
         "Lost something on campus? Don't worry! "
@@ -755,35 +719,23 @@ if selected_page == "🏠 Home":
 
     with col1:
         st.markdown("### 📦 Report Found Items")
-        st.write(
-            "Report found items by adding their photos and details."
-        )
+        st.write("Report found items by adding their photos and details.")
 
         st.markdown("### 🔍 Text Search")
-        st.write(
-            "Search using item names and descriptions."
-        )
+        st.write("Search using item names and descriptions.")
 
         st.markdown("### 📋 All Found Items")
-        st.write(
-            "View items reported by students."
-        )
+        st.write("View items reported by students.")
 
     with col2:
         st.markdown("### 🤖 AI Image Search")
-        st.write(
-            "Find visually similar items using AI technology."
-        )
+        st.write("Find visually similar items using AI technology.")
 
         st.markdown("### 📩 Recovery Requests")
-        st.write(
-            "Submit requests to recover your belongings."
-        )
+        st.write("Submit requests to recover your belongings.")
 
         st.markdown("### 🔐 Admin Dashboard")
-        st.write(
-            "Authorized administrators can manage recovery requests."
-        )
+        st.write("Authorized administrators can manage recovery requests.")
 
     st.divider()
 
@@ -809,24 +761,39 @@ if selected_page == "🏠 Home":
         "💙 FindIt AI — Helping Lost Items Find Their Way Home!"
     )
 
-    st.caption(
-        "An AI-powered campus lost-and-found system."
-    )
+    st.caption("An AI-powered campus lost-and-found system.")
 
 
 # --------------------------------------------------
-# CONTINUE WITH YOUR EXISTING PAGE BRANCHES BELOW
+# IMPORTANT: EXISTING PAGE BRANCHES
 # --------------------------------------------------
 
-# Keep your existing:
+# Continue your existing elif branches here.
+# They must directly follow the Home page's if block.
+#
 # elif selected_page == "📦 Report Item":
+#     YOUR EXISTING REPORT ITEM CODE
+#
 # elif selected_page == "🔍 Search Items":
+#     YOUR EXISTING SEARCH CODE
+#
 # elif selected_page == "🤖 AI Image Search":
+#     YOUR EXISTING AI IMAGE SEARCH CODE
+#
 # elif selected_page == "📋 All Found Items":
+#     YOUR EXISTING ALL ITEMS CODE
+#
 # elif selected_page == "📩 Recovery Requests":
+#     YOUR EXISTING RECOVERY REQUESTS CODE
+#
 # elif selected_page == "📤 Share":
+#     YOUR EXISTING SHARE CODE
+#
 # elif selected_page == "👤 Student Login":
+#     YOUR EXISTING STUDENT LOGIN CODE
+#
 # elif selected_page == "🔐 Admin":
+#     YOUR EXISTING ADMIN LOGIN CODE
 
 # --------------------------------------------------
 # 6. REPORT A FOUND ITEM
