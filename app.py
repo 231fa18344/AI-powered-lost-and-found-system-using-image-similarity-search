@@ -2545,6 +2545,7 @@ elif selected_page == "👤 Student Login":
                     st.info("No notifications available yet.")
 
             except Exception as notification_error:
+                print("NOTIFICATION INSERT ERROR:", repr(notification_error))
 
                 st.error("Unable to load notifications.")
 
