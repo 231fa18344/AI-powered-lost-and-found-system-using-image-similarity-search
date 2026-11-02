@@ -304,16 +304,11 @@ def find_similar_items(query_image, image_items):
 
     return ranked_items
 
-
 # --------------------------------------------------
 # 5. TOP NAVIGATION AND WEBSITE PAGES
 # --------------------------------------------------
 
-import textwrap
-
-# --------------------------------------------------
 # LOGIN STATE
-# --------------------------------------------------
 
 if "student_logged_in" not in st.session_state:
     st.session_state.student_logged_in = False
@@ -334,43 +329,6 @@ st.markdown("""
 
 .stApp {
     background-color: #f5f8fc;
-}
-
-.welcome-container {
-    min-height: 58vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 25px 15px 10px 15px;
-}
-
-.welcome-icon {
-    font-size: 68px;
-    margin-bottom: 8px;
-}
-
-.welcome-title {
-    font-size: 48px;
-    font-weight: 800;
-    color: #247b70;
-    margin-bottom: 8px;
-}
-
-.welcome-subtitle {
-    font-size: 22px;
-    font-weight: 700;
-    color: #172b46;
-    margin-bottom: 10px;
-}
-
-.welcome-description {
-    font-size: 15px;
-    color: #64748b;
-    max-width: 550px;
-    line-height: 1.7;
-    margin-bottom: 15px;
 }
 
 div.stButton > button {
@@ -448,23 +406,6 @@ div[data-testid="stRadio"] label:has(input:checked) p {
 
 @media screen and (max-width: 768px) {
 
-    .welcome-container {
-        min-height: 48vh;
-        padding-top: 30px;
-    }
-
-    .welcome-title {
-        font-size: 36px;
-    }
-
-    .welcome-subtitle {
-        font-size: 18px;
-    }
-
-    .welcome-description {
-        font-size: 13px;
-    }
-
     div[data-testid="stRadio"] > div[role="radiogroup"] {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
@@ -498,17 +439,6 @@ div[data-testid="stRadio"] label:has(input:checked) p {
     }
 }
 
-@media screen and (max-width: 400px) {
-
-    .welcome-title {
-        font-size: 32px;
-    }
-
-    .welcome-subtitle {
-        font-size: 16px;
-    }
-}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -522,29 +452,34 @@ if not (
     or st.session_state.admin_logged_in
 ):
 
-    # dedent removes unwanted indentation from HTML
-    welcome_html = textwrap.dedent("""
-        <div class="welcome-container">
-            <div class="welcome-icon">🔎</div>
+    st.markdown(
+        "<div style='height:70px'></div>",
+        unsafe_allow_html=True
+    )
 
-            <div class="welcome-title">
-                FindIt AI
-            </div>
+    st.markdown(
+        "<h1 style='text-align:center;color:#247b70;'>"
+        "🔎 FindIt AI</h1>",
+        unsafe_allow_html=True
+    )
 
-            <div class="welcome-subtitle">
-                Welcome to Smart Campus Lost &amp; Found
-            </div>
+    st.markdown(
+        "<h3 style='text-align:center;'>"
+        "Welcome to Smart Campus Lost &amp; Found"
+        "</h3>",
+        unsafe_allow_html=True
+    )
 
-            <div class="welcome-description">
-                Lost something on campus?<br>
-                Find your belongings using Artificial Intelligence.<br>
-                Report found items and reconnect them with their owners.
-            </div>
-        </div>
-    """)
+    st.markdown(
+        "<p style='text-align:center;color:#64748b;'>"
+        "Lost something on campus?<br>"
+        "Find your belongings using Artificial Intelligence.<br>"
+        "Report found items and reconnect them with their owners."
+        "</p>",
+        unsafe_allow_html=True
+    )
 
-    st.markdown(welcome_html, unsafe_allow_html=True)
-
+    st.write("")
     st.write("")
 
     empty_left, center_col, empty_right = st.columns([1, 2, 1])
@@ -573,9 +508,10 @@ if not (
                 st.session_state.selected_page = "🔐 Admin"
                 st.rerun()
 
+    st.write("")
     st.markdown(
         "<p style='text-align:center;color:#64748b;"
-        "font-size:13px;margin-top:35px;'>"
+        "font-size:13px;'>"
         "AI-powered campus lost-and-found platform"
         "</p>",
         unsafe_allow_html=True
@@ -773,21 +709,12 @@ if selected_page == "🏠 Home":
 
 
 # --------------------------------------------------
-# EXISTING PAGE IMPLEMENTATIONS
+# OTHER EXISTING PAGE IMPLEMENTATIONS
 # --------------------------------------------------
 
-# IMPORTANT:
-# The code you pasted did not include the actual implementations
-# for these pages. Keep your original page code here.
-#
-# Report Item
-# Search Items
-# AI Image Search
-# All Found Items
-# Recovery Requests
-# Share
-# Student Login
-# Admin Login
+# Keep your original Report Item, Search Items,
+# AI Image Search, All Found Items, Recovery Requests,
+# Share, Student Login and Admin Login page code here.
 
 
 # --------------------------------------------------
