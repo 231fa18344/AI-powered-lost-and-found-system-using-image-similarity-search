@@ -575,7 +575,23 @@ st.divider()
 # --------------------------------------------------
 # HOME PAGE
 # --------------------------------------------------
+if selected_page == "🏠 Home":
 
+    st.title("🔎 FindIt AI")
+
+    st.subheader(
+        "Your Smart Campus Lost-and-Found Assistant"
+    )
+
+    st.write(
+        "Welcome to FindIt AI! Your intelligent campus "
+        "lost-and-found platform."
+    )
+
+    st.info(
+        "FindIt AI helps students report found items "
+        "and search for lost belongings using AI."
+    )
 # --------------------------------------------------
 # 6. REPORT A FOUND ITEM
 # --------------------------------------------------
