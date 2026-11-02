@@ -517,7 +517,7 @@ if not (
     or st.session_state.admin_logged_in
 ):
 
-        st.markdown("""
+    st.markdown("""
     <div class="welcome-container">
 
         <div class="welcome-icon">🔎</div>
@@ -718,6 +718,7 @@ if selected_page == "🏠 Home":
     col1, col2 = st.columns(2)
 
     with col1:
+
         st.markdown("### 📦 Report Found Items")
         st.write("Report found items by adding their photos and details.")
 
@@ -728,6 +729,7 @@ if selected_page == "🏠 Home":
         st.write("View items reported by students.")
 
     with col2:
+
         st.markdown("### 🤖 AI Image Search")
         st.write("Find visually similar items using AI technology.")
 
@@ -765,35 +767,12 @@ if selected_page == "🏠 Home":
 
 
 # --------------------------------------------------
-# IMPORTANT: EXISTING PAGE BRANCHES
+# OTHER PAGE IMPLEMENTATIONS
 # --------------------------------------------------
 
-# Continue your existing elif branches here.
-# They must directly follow the Home page's if block.
-#
-# elif selected_page == "📦 Report Item":
-#     YOUR EXISTING REPORT ITEM CODE
-#
-# elif selected_page == "🔍 Search Items":
-#     YOUR EXISTING SEARCH CODE
-#
-# elif selected_page == "🤖 AI Image Search":
-#     YOUR EXISTING AI IMAGE SEARCH CODE
-#
-# elif selected_page == "📋 All Found Items":
-#     YOUR EXISTING ALL ITEMS CODE
-#
-# elif selected_page == "📩 Recovery Requests":
-#     YOUR EXISTING RECOVERY REQUESTS CODE
-#
-# elif selected_page == "📤 Share":
-#     YOUR EXISTING SHARE CODE
-#
-# elif selected_page == "👤 Student Login":
-#     YOUR EXISTING STUDENT LOGIN CODE
-#
-# elif selected_page == "🔐 Admin":
-#     YOUR EXISTING ADMIN LOGIN CODE
+# Your original Report Item, Search Items, AI Image Search,
+# All Found Items, Recovery Requests, Share, Student Login,
+# and Admin Login code must be placed here as elif branches.
 
 # --------------------------------------------------
 # 6. REPORT A FOUND ITEM
