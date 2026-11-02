@@ -305,29 +305,31 @@ def find_similar_items(query_image, image_items):
     return ranked_items
 
 
+
 # --------------------------------------------------
 # 5. TOP NAVIGATION AND WEBSITE PAGES
 # --------------------------------------------------
 
-# PREMIUM TOP NAVIGATION BAR
+# PREMIUM RESPONSIVE TOP NAVIGATION BAR
 
 st.markdown("""
 <style>
 
-/* Navigation bar background */
+/* Main navigation container */
 div[data-testid="stRadio"] > div[role="radiogroup"] {
     background: #17232f;
-    padding: 10px;
+    padding: 12px;
     border-radius: 14px;
     border: 1px solid #35434d;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
+    width: 100%;
 }
 
 /* Hide radio circles */
-div[data-testid="stRadio"] label > div:first-child {
+div[data-testid="stRadio"] input[type="radio"] {
     display: none;
 }
 
@@ -340,6 +342,7 @@ div[data-testid="stRadio"] label {
     border: 1px solid transparent;
     transition: all 0.2s ease;
     cursor: pointer;
+    margin: 0;
 }
 
 /* Hover effect */
@@ -356,10 +359,102 @@ div[data-testid="stRadio"] label:has(input:checked) {
     font-weight: 600;
 }
 
-/* Remove extra radio spacing */
+/* Navigation text */
 div[data-testid="stRadio"] label p {
     font-size: 14px;
     margin: 0;
+}
+
+/* Remove unwanted radio spacing */
+div[data-testid="stRadio"] label > div:first-child {
+    display: none;
+}
+
+/* Mobile responsive design */
+@media screen and (max-width: 768px) {
+
+    /* Mobile navigation layout */
+    div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 10px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Mobile navigation buttons */
+    div[data-testid="stRadio"] label {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        padding: 12px 5px;
+        text-align: center;
+        justify-content: center;
+        border-radius: 10px;
+    }
+
+    /* Mobile navigation text */
+    div[data-testid="stRadio"] label p {
+        font-size: 12px;
+        line-height: 1.4;
+        text-align: center;
+        overflow-wrap: anywhere;
+    }
+
+    /* Mobile page headings */
+    h1 {
+        font-size: 28px !important;
+    }
+
+    h2 {
+        font-size: 23px !important;
+    }
+
+    h3 {
+        font-size: 19px !important;
+    }
+
+    /* Mobile content spacing */
+    section.main > div {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    /* Images should fit mobile screen */
+    div[data-testid="stImage"] img {
+        max-width: 100%;
+        height: auto;
+        object-fit: contain;
+    }
+
+    /* Mobile buttons */
+    div[data-testid="stButton"] button,
+    div[data-testid="stDownloadButton"] button {
+        width: 100%;
+        min-height: 42px;
+    }
+
+    /* Mobile input fields */
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stTextArea"] textarea,
+    div[data-testid="stSelectbox"] {
+        width: 100%;
+    }
+
+}
+
+/* Small mobile screens */
+@media screen and (max-width: 400px) {
+
+    div[data-testid="stRadio"] label {
+        padding: 10px 3px;
+    }
+
+    div[data-testid="stRadio"] label p {
+        font-size: 11px;
+    }
+
 }
 
 </style>
@@ -613,6 +708,7 @@ elif selected_page == "📤 Share":
         file_name="FindItAI_QR_Code.png",
         mime="image/png"
     )
+
 # --------------------------------------------------
 # 6. REPORT A FOUND ITEM
 # --------------------------------------------------
