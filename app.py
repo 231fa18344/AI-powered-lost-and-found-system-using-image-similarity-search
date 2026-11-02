@@ -517,7 +517,7 @@ if not (
     or st.session_state.admin_logged_in
 ):
 
-    st.markdown("""
+        st.markdown("""
     <div class="welcome-container">
 
         <div class="welcome-icon">🔎</div>
@@ -531,8 +531,8 @@ if not (
         </div>
 
         <div class="welcome-description">
-            Lost something on campus?
-            Find your belongings using Artificial Intelligence.
+            Lost something on campus?<br>
+            Find your belongings using Artificial Intelligence.<br>
             Report found items and reconnect them with their owners.
         </div>
 
