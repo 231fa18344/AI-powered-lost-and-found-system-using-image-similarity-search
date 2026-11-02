@@ -2439,6 +2439,120 @@ elif selected_page == "👤 Student Login":
             st.divider()
 
             # ------------------------------------------
+            # MY NOTIFICATIONS
+            # ------------------------------------------
+
+            st.subheader("🔔 My Notifications")
+
+            try:
+
+                notifications_response = (
+                    student_supabase.table("notifications")
+                    .select(
+                        "id, title, message, is_read, created_at"
+                    )
+                    .eq("user_id", student_uid)
+                    .order("created_at", desc=True)
+                    .execute()
+                )
+
+                my_notifications = notifications_response.data or []
+
+                unread_count = sum(
+                    1
+                    for notification in my_notifications
+                    if not notification.get("is_read", False)
+                )
+
+                if unread_count > 0:
+
+                    st.info(
+                        f"🔔 You have {unread_count} unread notification(s)."
+                    )
+
+                else:
+
+                    st.success("You are all caught up!")
+
+                if my_notifications:
+
+                    for notification in my_notifications:
+
+                        with st.container(border=True):
+
+                            if notification.get("is_read", False):
+
+                                st.write("✅ Read")
+
+                            else:
+
+                                st.write("🔔 **New Notification**")
+
+                            st.write(
+                                f"**{notification.get('title', 'Notification')}**"
+                            )
+
+                            st.write(
+                                notification.get("message", "")
+                            )
+
+                            st.caption(
+                                f"Date: {str(notification.get('created_at', ''))[:19]}"
+                            )
+
+                            if not notification.get("is_read", False):
+
+                                if st.button(
+                                    "✓ Mark as Read",
+                                    key=f"read_notification_{notification.get('id')}"
+                                ):
+
+                                    try:
+
+                                        (
+                                            student_supabase
+                                            .table("notifications")
+                                            .update({
+                                                "is_read": True
+                                            })
+                                            .eq(
+                                                "id",
+                                                notification.get("id")
+                                            )
+                                            .eq(
+                                                "user_id",
+                                                student_uid
+                                            )
+                                            .execute()
+                                        )
+
+                                        st.success(
+                                            "Notification marked as read!"
+                                        )
+
+                                        st.rerun()
+
+                                    except Exception as read_error:
+
+                                        st.error(
+                                            "Unable to mark notification as read."
+                                        )
+
+                                        st.code(str(read_error))
+
+                else:
+
+                    st.info("No notifications available yet.")
+
+            except Exception as notification_error:
+
+                st.error("Unable to load notifications.")
+
+                st.code(str(notification_error))
+
+            st.divider()
+
+            # ------------------------------------------
             # MY RECOVERY REQUESTS
             # ------------------------------------------
 
@@ -2484,7 +2598,6 @@ elif selected_page == "👤 Student Login":
                                 f"{item_details.get('location', 'Not specified')}"
                             )
 
-                            # SHOW FOUND ITEM PHOTO
                             item_image = item_details.get("image_path")
 
                             if item_image:
@@ -3246,7 +3359,6 @@ elif selected_page == "🔐 Admin":
                                 f"{item_details.get('location', 'Not available')}"
                             )
 
-                            # SHOW FOUND ITEM PHOTO IN ADMIN DASHBOARD
                             item_image = item_details.get("image_path")
 
                             if item_image:
@@ -3286,29 +3398,25 @@ elif selected_page == "🔐 Admin":
 
                             st.divider()
 
+                            status_options = [
+                                "Pending",
+                                "Contacted",
+                                "Returned",
+                                "Rejected"
+                            ]
+
+                            current_status = request.get(
+                                "status",
+                                "Pending"
+                            )
+
+                            if current_status not in status_options:
+                                current_status = "Pending"
+
                             new_status = st.selectbox(
                                 "Update Request Status",
-                                [
-                                    "Pending",
-                                    "Contacted",
-                                    "Returned",
-                                    "Rejected"
-                                ],
-                                index=[
-                                    "Pending",
-                                    "Contacted",
-                                    "Returned",
-                                    "Rejected"
-                                ].index(
-                                    request.get("status", "Pending")
-                                    if request.get("status") in [
-                                        "Pending",
-                                        "Contacted",
-                                        "Returned",
-                                        "Rejected"
-                                    ]
-                                    else "Pending"
-                                ),
+                                status_options,
+                                index=status_options.index(current_status),
                                 key=f"admin_status_{request_id}"
                             )
 
@@ -3319,6 +3427,11 @@ elif selected_page == "🔐 Admin":
 
                                 try:
 
+                                    previous_status = request.get(
+                                        "status",
+                                        "Pending"
+                                    )
+
                                     (
                                         admin_supabase
                                         .table("recovery_requests")
@@ -3328,6 +3441,43 @@ elif selected_page == "🔐 Admin":
                                         .eq("id", request_id)
                                         .execute()
                                     )
+
+                                    # ----------------------------------
+                                    # SEND NOTIFICATION TO STUDENT
+                                    # ----------------------------------
+
+                                    student_user_id = request.get("user_id")
+
+                                    if (
+                                        student_user_id
+                                        and new_status != previous_status
+                                    ):
+
+                                        try:
+
+                                            admin_supabase.table(
+                                                "notifications"
+                                            ).insert({
+                                                "user_id": student_user_id,
+                                                "title": "Recovery Request Status Updated",
+                                                "message": (
+                                                    f"Your recovery request status "
+                                                    f"has been updated from "
+                                                    f"{previous_status} to "
+                                                    f"{new_status}."
+                                                )
+                                            }).execute()
+
+                                        except Exception as notification_error:
+
+                                            st.warning(
+                                                "Status updated, but notification "
+                                                "could not be sent."
+                                            )
+
+                                            st.code(
+                                                str(notification_error)
+                                            )
 
                                     st.success(
                                         "Request status updated successfully!"
@@ -3441,6 +3591,7 @@ elif selected_page == "🔐 Admin":
             st.success("Admin logged out successfully!")
 
             st.rerun()
+
 # --------------------------------------------------
 # 12. CLOSE DATABASE CONNECTION
 # --------------------------------------------------
