@@ -306,103 +306,127 @@ def find_similar_items(query_image, image_items):
 
 
 
+
 # --------------------------------------------------
 # 5. TOP NAVIGATION AND WEBSITE PAGES
 # --------------------------------------------------
 
-# PREMIUM RESPONSIVE TOP NAVIGATION BAR
+# PREMIUM MOBILE-FRIENDLY TOP NAVIGATION
 
 st.markdown("""
 <style>
 
-/* Main navigation container */
+/* -----------------------------------------
+   NAVIGATION MAIN PANEL
+----------------------------------------- */
+
 div[data-testid="stRadio"] > div[role="radiogroup"] {
-    background: #17232f;
-    padding: 12px;
-    border-radius: 14px;
-    border: 1px solid #35434d;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    background: linear-gradient(145deg, #101f36, #142b48);
+    padding: 15px;
+    border-radius: 18px;
+    border: 1px solid #344966;
     width: 100%;
+    box-sizing: border-box;
 }
 
 /* Hide radio circles */
+
 div[data-testid="stRadio"] input[type="radio"] {
-    display: none;
+    display: none !important;
 }
 
-/* Navigation options */
+div[data-testid="stRadio"] label > div:first-child {
+    display: none !important;
+}
+
+/* -----------------------------------------
+   NAVIGATION CARDS
+----------------------------------------- */
+
 div[data-testid="stRadio"] label {
-    background: transparent;
-    color: #d8e1e5 !important;
-    padding: 10px 15px;
-    border-radius: 9px;
-    border: 1px solid transparent;
-    transition: all 0.2s ease;
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    background: #1b2d49;
+    border: 1px solid #344966;
+    border-radius: 13px;
+    padding: 14px 8px;
+    min-height: 54px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 !important;
     cursor: pointer;
-    margin: 0;
-}
-
-/* Hover effect */
-div[data-testid="stRadio"] label:hover {
-    background: #293b45;
-    color: #ffffff !important;
-}
-
-/* Active navigation option */
-div[data-testid="stRadio"] label:has(input:checked) {
-    background: #397d72;
-    color: #ffffff !important;
-    border: 1px solid #69a99b;
-    font-weight: 600;
+    transition: all 0.2s ease;
 }
 
 /* Navigation text */
+
 div[data-testid="stRadio"] label p {
+    color: #f1f5f9 !important;
     font-size: 14px;
+    font-weight: 600;
+    text-align: center;
     margin: 0;
+    line-height: 1.4;
 }
 
-/* Remove unwanted radio spacing */
-div[data-testid="stRadio"] label > div:first-child {
-    display: none;
+/* Hover effect */
+
+div[data-testid="stRadio"] label:hover {
+    background: #293e5e;
+    border-color: #5b789f;
+    transform: translateY(-2px);
 }
 
-/* Mobile responsive design */
+/* Active navigation card */
+
+div[data-testid="stRadio"] label:has(input:checked) {
+    background: linear-gradient(135deg, #397d72, #28695f);
+    border: 1px solid #69c5ad;
+    box-shadow: 0 0 12px rgba(57, 125, 114, 0.3);
+}
+
+/* Active text */
+
+div[data-testid="stRadio"] label:has(input:checked) p {
+    color: #ffffff !important;
+    font-weight: 700;
+}
+
+/* Admin full width */
+
+div[data-testid="stRadio"] label:last-child {
+    grid-column: 1 / -1;
+}
+
+/* -----------------------------------------
+   MOBILE RESPONSIVE DESIGN
+----------------------------------------- */
+
 @media screen and (max-width: 768px) {
 
-    /* Mobile navigation layout */
     div[data-testid="stRadio"] > div[role="radiogroup"] {
-        display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-        padding: 10px;
-        width: 100%;
-        box-sizing: border-box;
+        gap: 9px;
+        padding: 11px;
     }
 
-    /* Mobile navigation buttons */
     div[data-testid="stRadio"] label {
-        width: 100%;
-        min-width: 0;
-        box-sizing: border-box;
-        padding: 12px 5px;
-        text-align: center;
-        justify-content: center;
-        border-radius: 10px;
+        min-height: 50px;
+        padding: 11px 5px;
+        border-radius: 12px;
     }
 
-    /* Mobile navigation text */
     div[data-testid="stRadio"] label p {
         font-size: 12px;
         line-height: 1.4;
-        text-align: center;
-        overflow-wrap: anywhere;
     }
 
-    /* Mobile page headings */
+    /* Mobile headings */
+
     h1 {
         font-size: 28px !important;
     }
@@ -415,13 +439,15 @@ div[data-testid="stRadio"] label > div:first-child {
         font-size: 19px !important;
     }
 
-    /* Mobile content spacing */
+    /* Mobile page spacing */
+
     section.main > div {
         padding-left: 12px;
         padding-right: 12px;
     }
 
-    /* Images should fit mobile screen */
+    /* Responsive images */
+
     div[data-testid="stImage"] img {
         max-width: 100%;
         height: auto;
@@ -429,26 +455,31 @@ div[data-testid="stRadio"] label > div:first-child {
     }
 
     /* Mobile buttons */
+
     div[data-testid="stButton"] button,
     div[data-testid="stDownloadButton"] button {
         width: 100%;
-        min-height: 42px;
+        min-height: 44px;
+        border-radius: 10px;
     }
 
-    /* Mobile input fields */
+    /* Mobile inputs */
+
     div[data-testid="stTextInput"] input,
-    div[data-testid="stTextArea"] textarea,
-    div[data-testid="stSelectbox"] {
+    div[data-testid="stTextArea"] textarea {
         width: 100%;
+        box-sizing: border-box;
     }
 
 }
 
 /* Small mobile screens */
+
 @media screen and (max-width: 400px) {
 
     div[data-testid="stRadio"] label {
         padding: 10px 3px;
+        min-height: 46px;
     }
 
     div[data-testid="stRadio"] label p {
@@ -457,11 +488,33 @@ div[data-testid="stRadio"] label > div:first-child {
 
 }
 
+/* -----------------------------------------
+   DESKTOP RESPONSIVE DESIGN
+----------------------------------------- */
+
+@media screen and (min-width: 769px) {
+
+    div[data-testid="stRadio"] > div[role="radiogroup"] {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+}
+
+/* -----------------------------------------
+   GENERAL IMAGE AND CONTENT STYLING
+----------------------------------------- */
+
+div[data-testid="stImage"] {
+    max-width: 100%;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
 
+# --------------------------------------------------
 # TOP NAVIGATION
+# --------------------------------------------------
 
 selected_page = st.radio(
     "Navigation",
