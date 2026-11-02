@@ -304,11 +304,16 @@ def find_similar_items(query_image, image_items):
 
     return ranked_items
 
+
 # --------------------------------------------------
 # 5. TOP NAVIGATION AND WEBSITE PAGES
 # --------------------------------------------------
 
+import textwrap
+
+# --------------------------------------------------
 # LOGIN STATE
+# --------------------------------------------------
 
 if "student_logged_in" not in st.session_state:
     st.session_state.student_logged_in = False
@@ -517,27 +522,28 @@ if not (
     or st.session_state.admin_logged_in
 ):
 
-    st.markdown("""
-    <div class="welcome-container">
+    # dedent removes unwanted indentation from HTML
+    welcome_html = textwrap.dedent("""
+        <div class="welcome-container">
+            <div class="welcome-icon">🔎</div>
 
-        <div class="welcome-icon">🔎</div>
+            <div class="welcome-title">
+                FindIt AI
+            </div>
 
-        <div class="welcome-title">
-            FindIt AI
+            <div class="welcome-subtitle">
+                Welcome to Smart Campus Lost &amp; Found
+            </div>
+
+            <div class="welcome-description">
+                Lost something on campus?<br>
+                Find your belongings using Artificial Intelligence.<br>
+                Report found items and reconnect them with their owners.
+            </div>
         </div>
+    """)
 
-        <div class="welcome-subtitle">
-            Welcome to Smart Campus Lost & Found
-        </div>
-
-        <div class="welcome-description">
-            Lost something on campus?<br>
-            Find your belongings using Artificial Intelligence.<br>
-            Report found items and reconnect them with their owners.
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(welcome_html, unsafe_allow_html=True)
 
     st.write("")
 
@@ -767,12 +773,22 @@ if selected_page == "🏠 Home":
 
 
 # --------------------------------------------------
-# OTHER PAGE IMPLEMENTATIONS
+# EXISTING PAGE IMPLEMENTATIONS
 # --------------------------------------------------
 
-# Your original Report Item, Search Items, AI Image Search,
-# All Found Items, Recovery Requests, Share, Student Login,
-# and Admin Login code must be placed here as elif branches.
+# IMPORTANT:
+# The code you pasted did not include the actual implementations
+# for these pages. Keep your original page code here.
+#
+# Report Item
+# Search Items
+# AI Image Search
+# All Found Items
+# Recovery Requests
+# Share
+# Student Login
+# Admin Login
+
 
 # --------------------------------------------------
 # 6. REPORT A FOUND ITEM
