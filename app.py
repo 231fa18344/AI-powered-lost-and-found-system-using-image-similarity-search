@@ -1890,7 +1890,6 @@ elif selected_page == "📋 All Found Items":
 
     st.divider()
 
-
 # --------------------------------------------------
 # 10. Safe Item Recovery Request
 # --------------------------------------------------
