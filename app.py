@@ -1877,87 +1877,9 @@ elif selected_page == "📩 Recovery Requests":
 
     st.divider()
     
-
-
-# --------------------------------------------------
-# 11. SHARE PAGE - QR CODE
-# --------------------------------------------------
-
-elif selected_page == "📤 Share":
-
-    st.title("🔎 FindIt AI")
-    st.header("📤 Share FindIt AI")
-
-    st.write(
-        "Scan this QR code using your phone camera "
-        "to open the FindIt AI website."
-    )
-
-    st.divider()
-
-    app_url = (
-        "https://ai-powered-lost-and-found-system-using-image-similarity-search.streamlit.app/"
-    )
-
-    try:
-
-        qr = qrcode.QRCode(
-            version=None,
-            error_correction=qrcode.constants.ERROR_CORRECT_M,
-            box_size=10,
-            border=4
-        )
-
-        qr.add_data(app_url)
-        qr.make(fit=True)
-
-        qr_image = qr.make_image(
-            fill_color="black",
-            back_color="white"
-        ).convert("RGB")
-
-        qr_buffer = BytesIO()
-        qr_image.save(qr_buffer, format="PNG")
-        qr_bytes = qr_buffer.getvalue()
-
-        left_col, center_col, right_col = st.columns([1, 2, 1])
-
-        with center_col:
-
-            st.image(
-                qr_bytes,
-                caption="Scan to open FindIt AI",
-                use_container_width=True
-            )
-
-            st.download_button(
-                label="⬇️ Download QR Code",
-                data=qr_bytes,
-                file_name="FindItAI_QR.png",
-                mime="image/png",
-                use_container_width=True
-            )
-
-        st.success("QR code generated successfully!")
-
-        st.markdown("### 🔗 Website Link")
-
-        st.code(app_url)
-
-        st.link_button(
-            "🌐 Open FindIt AI Website",
-            app_url,
-            use_container_width=True
-        )
-
-    except Exception as error:
-
-        st.error("Unable to generate QR code.")
-
-        st.code(str(error))
-
-    st.divider()
-
+# 11. STUDENT LOGIN, SIGN UP, PROFILE,
+#     MY RECOVERY REQUESTS AND ADMIN DASHBOARD
+# -------------------------------------------------
 
 # ==================================================
 # STUDENT LOGIN AND PROFILE
@@ -1965,10 +1887,733 @@ elif selected_page == "📤 Share":
 
 elif selected_page == "👤 Student Login":
 
+    st.title("🔎 FindIt AI")
+    st.header("👤 Student Login")
+
+    if "student_logged_in" not in st.session_state:
+        st.session_state.student_logged_in = False
+
+    if "student_access_token" not in st.session_state:
+        st.session_state.student_access_token = None
+
+    if "student_refresh_token" not in st.session_state:
+        st.session_state.student_refresh_token = None
+
+    if "student_user_id" not in st.session_state:
+        st.session_state.student_user_id = None
+
+    if not st.session_state.student_logged_in:
+
+        login_tab, signup_tab = st.tabs([
+            "🔐 Login",
+            "📝 Sign Up"
+        ])
+
+        # ------------------------------------------
+        # STUDENT LOGIN
+        # ------------------------------------------
+
+        with login_tab:
+
+            st.subheader("Student Login")
+
+            login_email = st.text_input(
+                "Email",
+                key="student_login_email"
+            )
+
+            login_password = st.text_input(
+                "Password",
+                type="password",
+                key="student_login_password"
+            )
+
+            if st.button("Login", key="student_login_button"):
+
+                if not login_email or not login_password:
+                    st.warning("Please enter email and password.")
+
+                else:
+
+                    try:
+
+                        login_response = supabase.auth.sign_in_with_password({
+                            "email": login_email,
+                            "password": login_password
+                        })
+
+                        if login_response.user:
+
+                            st.session_state.student_logged_in = True
+                            st.session_state.student_user_id = login_response.user.id
+                            st.session_state.student_access_token = login_response.session.access_token
+                            st.session_state.student_refresh_token = login_response.session.refresh_token
+
+                            st.success("Login successful!")
+                            st.rerun()
+
+                    except Exception as login_error:
+
+                        st.error("Invalid email or password.")
+                        st.code(str(login_error))
+
+        # ------------------------------------------
+        # STUDENT SIGN UP
+        # ------------------------------------------
+
+        with signup_tab:
+
+            st.subheader("Create Student Account")
+
+            signup_name = st.text_input(
+                "Full Name",
+                key="student_signup_name"
+            )
+
+            signup_email = st.text_input(
+                "Email",
+                key="student_signup_email"
+            )
+
+            signup_phone = st.text_input(
+                "Phone Number",
+                key="student_signup_phone"
+            )
+
+            signup_password = st.text_input(
+                "Password",
+                type="password",
+                key="student_signup_password"
+            )
+
+            confirm_password = st.text_input(
+                "Confirm Password",
+                type="password",
+                key="student_confirm_password"
+            )
+
+            if st.button("Create Account", key="student_signup_button"):
+
+                if not signup_name or not signup_email or not signup_phone or not signup_password:
+                    st.warning("Please fill all fields.")
+
+                elif len(signup_phone) != 10 or not signup_phone.isdigit():
+                    st.warning("Enter a valid 10-digit phone number.")
+
+                elif len(signup_password) < 6:
+                    st.warning("Password must contain at least 6 characters.")
+
+                elif signup_password != confirm_password:
+                    st.warning("Passwords do not match.")
+
+                else:
+
+                    try:
+
+                        signup_response = supabase.auth.sign_up({
+                            "email": signup_email,
+                            "password": signup_password
+                        })
+
+                        if signup_response.user:
+
+                            student_uid = signup_response.user.id
+
+                            supabase.table("student_profiles").upsert({
+                                "id": student_uid,
+                                "full_name": signup_name,
+                                "email": signup_email,
+                                "phone": signup_phone
+                            }).execute()
+
+                            st.success(
+                                "Account created successfully! Please login."
+                            )
+
+                    except Exception as signup_error:
+
+                        st.error("Unable to create account.")
+                        st.code(str(signup_error))
+
+    else:
+
+        # ------------------------------------------
+        # STUDENT DASHBOARD
+        # ------------------------------------------
+
+        st.success("You are logged in!")
+
+        student_uid = st.session_state.student_user_id
+
+        try:
+
+            student_supabase = create_client(
+                SUPABASE_URL,
+                SUPABASE_KEY
+            )
+
+            student_supabase.auth.set_session(
+                st.session_state.student_access_token,
+                st.session_state.student_refresh_token
+            )
+
+            profile_response = (
+                student_supabase.table("student_profiles")
+                .select("*")
+                .eq("id", student_uid)
+                .execute()
+            )
+
+            student_profile = (
+                profile_response.data[0]
+                if profile_response.data
+                else {}
+            )
+
+            st.subheader("👤 My Profile")
+
+            profile_name = st.text_input(
+                "Full Name",
+                value=student_profile.get("full_name", "")
+            )
+
+            profile_email = st.text_input(
+                "Email",
+                value=student_profile.get("email", ""),
+                disabled=True
+            )
+
+            profile_phone = st.text_input(
+                "Phone Number",
+                value=student_profile.get("phone", "")
+            )
+
+            if st.button("Update Profile"):
+
+                student_supabase.table("student_profiles").upsert({
+                    "id": student_uid,
+                    "full_name": profile_name,
+                    "email": profile_email,
+                    "phone": profile_phone
+                }).execute()
+
+                st.success("Profile updated successfully!")
+                st.rerun()
+
+            st.divider()
+
+            # ------------------------------------------
+            # MY NOTIFICATIONS
+            # ------------------------------------------
+
+            st.subheader("🔔 My Notifications")
+
+            try:
+
+                notifications_response = (
+                    student_supabase.table("notifications")
+                    .select("id, title, message, is_read, created_at")
+                    .eq("user_id", student_uid)
+                    .order("created_at", desc=True)
+                    .execute()
+                )
+
+                my_notifications = notifications_response.data or []
+
+                unread_count = sum(
+                    1 for notification in my_notifications
+                    if not notification.get("is_read", False)
+                )
+
+                st.info(
+                    f"🔔 You have {unread_count} unread notification(s)."
+                )
+
+                if my_notifications:
+
+                    for notification in my_notifications:
+
+                        with st.container(border=True):
+
+                            if notification.get("is_read", False):
+                                st.write(
+                                    f"📩 **{notification.get('title', 'Notification')}**"
+                                )
+                            else:
+                                st.write(
+                                    f"🔵 **{notification.get('title', 'Notification')}**"
+                                )
+
+                            st.write(notification.get("message", ""))
+
+                            st.caption(
+                                "Received: "
+                                + str(notification.get("created_at", ""))[:19]
+                            )
+
+                            if not notification.get("is_read", False):
+
+                                if st.button(
+                                    "Mark as Read",
+                                    key=f"read_notification_{notification['id']}"
+                                ):
+
+                                    student_supabase.table("notifications").update({
+                                        "is_read": True
+                                    }).eq(
+                                        "id", notification["id"]
+                                    ).eq(
+                                        "user_id", student_uid
+                                    ).execute()
+
+                                    st.rerun()
+
+                else:
+
+                    st.info("You don't have any notifications yet.")
+
+            except Exception as notification_error:
+
+                st.error("Unable to load notifications.")
+                st.code(str(notification_error))
+
+            st.divider()
+
+            # ------------------------------------------
+            # MY RECOVERY REQUESTS
+            # ------------------------------------------
+
+            st.subheader("📦 My Recovery Requests")
+
+            requests_response = (
+                student_supabase.table("recovery_requests")
+                .select("*")
+                .eq("student_id", student_uid)
+                .order("created_at", desc=True)
+                .execute()
+            )
+
+            my_requests = requests_response.data or []
+
+            if my_requests:
+
+                for request in my_requests:
+
+                    with st.container(border=True):
+
+                        st.write(
+                            f"**Request ID:** {request.get('id', '')}"
+                        )
+
+                        st.write(
+                            f"**Status:** {request.get('status', 'Pending')}"
+                        )
+
+                        item_details = {}
+
+                        try:
+
+                            item_response = (
+                                student_supabase.table("found_items")
+                                .select("*")
+                                .eq("id", request.get("found_item_id"))
+                                .execute()
+                            )
+
+                            if item_response.data:
+                                item_details = item_response.data[0]
+
+                        except Exception:
+                            pass
+
+                        st.write(
+                            f"**Item:** {item_details.get('item_name', 'Item details unavailable')}"
+                        )
+
+                        st.write(
+                            f"**Location:** {item_details.get('location', 'Not specified')}"
+                        )
+
+                        # SHOW FOUND ITEM PHOTO
+
+                        item_image = item_details.get("image_path")
+
+                        if item_image:
+
+                            try:
+                                st.image(item_image, width=200)
+                            except Exception:
+                                pass
+
+                        st.write(
+                            f"**Submitted:** {str(request.get('created_at', ''))[:19]}"
+                        )
+
+            else:
+
+                st.info("You have not submitted any recovery requests yet.")
+
+            st.divider()
+
+            # ------------------------------------------
+            # STUDENT LOGOUT
+            # ------------------------------------------
+
+            if st.button("🚪 Logout", key="student_logout_button"):
+
+                try:
+                    student_supabase.auth.sign_out()
+                except Exception:
+                    pass
+
+                st.session_state.student_logged_in = False
+                st.session_state.student_access_token = None
+                st.session_state.student_refresh_token = None
+                st.session_state.student_user_id = None
+
+                st.success("Logged out successfully!")
+                st.rerun()
+
+        except Exception as student_error:
+
+            st.error("Unable to load student dashboard.")
+            st.code(str(student_error))
+
+
+# ==================================================
+# ADMIN LOGIN AND DASHBOARD
+# ==================================================
+
+elif selected_page == "🔐 Admin":
+
+    ADMIN_UID = "1fa8098e-27be-46c1-9916-1e20506f9fa5"
+
+    st.title("🔎 FindIt AI")
+
+    st.header("🔐 Admin Login")
+
+    if "admin_logged_in" not in st.session_state:
+        st.session_state.admin_logged_in = False
+
+    if "admin_access_token" not in st.session_state:
+        st.session_state.admin_access_token = None
+
+    if "admin_refresh_token" not in st.session_state:
+        st.session_state.admin_refresh_token = None
+
+    if not st.session_state.admin_logged_in:
+
+        admin_email = st.text_input(
+            "Admin Email",
+            key="admin_email"
+        )
+
+        admin_password = st.text_input(
+            "Admin Password",
+            type="password",
+            key="admin_password"
+        )
+
+        if st.button("Admin Login", key="admin_login_button"):
+
+            try:
+
+                admin_response = supabase.auth.sign_in_with_password({
+                    "email": admin_email,
+                    "password": admin_password
+                })
+
+                if admin_response.user:
+
+                    if admin_response.user.id == ADMIN_UID:
+
+                        st.session_state.admin_logged_in = True
+                        st.session_state.admin_access_token = admin_response.session.access_token
+                        st.session_state.admin_refresh_token = admin_response.session.refresh_token
+
+                        st.success("Admin login successful!")
+                        st.rerun()
+
+                    else:
+
+                        supabase.auth.sign_out()
+                        st.error("You are not authorized as Admin.")
+
+            except Exception as admin_error:
+
+                st.error("Invalid admin credentials.")
+                st.code(str(admin_error))
+
+    else:
+
+        st.success("Welcome Admin!")
+
+        admin_supabase = create_client(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        )
+
+        admin_supabase.auth.set_session(
+            st.session_state.admin_access_token,
+            st.session_state.admin_refresh_token
+        )
+
+        # ------------------------------------------
+        # LOAD DASHBOARD DATA
+        # ------------------------------------------
+
+        recovery_response = (
+            admin_supabase.table("recovery_requests")
+            .select("*")
+            .order("created_at", desc=True)
+            .execute()
+        )
+
+        found_response = (
+            admin_supabase.table("found_items")
+            .select("*")
+            .execute()
+        )
+
+        students_response = (
+            admin_supabase.table("student_profiles")
+            .select("*")
+            .execute()
+        )
+
+        all_requests = recovery_response.data or []
+        all_found_items = found_response.data or []
+        all_students = students_response.data or []
+
+        found_items_map = {
+            item.get("id"): item
+            for item in all_found_items
+        }
+
+        students_map = {
+            student.get("id"): student
+            for student in all_students
+        }
+
+        # ------------------------------------------
+        # DASHBOARD METRICS
+        # ------------------------------------------
+
+        st.header("📊 Admin Dashboard")
+
+        total_requests = len(all_requests)
+        total_items = len(all_found_items)
+        total_students = len(all_students)
+
+        pending_requests = sum(
+            1 for request in all_requests
+            if request.get("status") == "Pending"
+        )
+
+        contacted_requests = sum(
+            1 for request in all_requests
+            if request.get("status") == "Contacted"
+        )
+
+        returned_requests = sum(
+            1 for request in all_requests
+            if request.get("status") == "Returned"
+        )
+
+        rejected_requests = sum(
+            1 for request in all_requests
+            if request.get("status") == "Rejected"
+        )
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        col1.metric("Total Requests", total_requests)
+        col2.metric("Found Items", total_items)
+        col3.metric("Students", total_students)
+        col4.metric("Pending Requests", pending_requests)
+
+        st.divider()
+
+        # ------------------------------------------
+        # REQUEST STATUS SUMMARY
+        # ------------------------------------------
+
+        st.subheader("📌 Request Status Summary")
+
+        status_col1, status_col2, status_col3, status_col4 = st.columns(4)
+
+        status_col1.metric("Pending", pending_requests)
+        status_col2.metric("Contacted", contacted_requests)
+        status_col3.metric("Returned", returned_requests)
+        status_col4.metric("Rejected", rejected_requests)
+
+        st.divider()
+
+        # ------------------------------------------
+        # REQUEST DETAILS
+        # ------------------------------------------
+
+        st.subheader("📋 All Recovery Requests")
+
+        if all_requests:
+
+            for request in all_requests:
+
+                request_id = request.get("id")
+                student_id = request.get("student_id")
+                found_item_id = request.get("found_item_id")
+
+                student_details = students_map.get(student_id, {})
+                item_details = found_items_map.get(found_item_id, {})
+
+                with st.container(border=True):
+
+                    st.write(f"**Request ID:** {request_id}")
+
+                    st.write(
+                        f"**Student:** {student_details.get('full_name', 'Unknown')}"
+                    )
+
+                    st.write(
+                        f"**Email:** {student_details.get('email', 'Not available')}"
+                    )
+
+                    st.write(
+                        f"**Phone:** {student_details.get('phone', 'Not available')}"
+                    )
+
+                    st.write(
+                        f"**Item:** {item_details.get('item_name', 'Unknown')}"
+                    )
+
+                    st.write(
+                        f"**Location:** {item_details.get('location', 'Not specified')}"
+                    )
+
+                    st.write(
+                        f"**Current Status:** {request.get('status', 'Pending')}"
+                    )
+
+                    st.write(
+                        f"**Submitted:** {str(request.get('created_at', ''))[:19]}"
+                    )
+
+                    # ----------------------------------
+                    # UPDATE REQUEST STATUS
+                    # ----------------------------------
+
+                    current_status = request.get("status", "Pending")
+
+                    status_options = [
+                        "Pending",
+                        "Contacted",
+                        "Returned",
+                        "Rejected"
+                    ]
+
+                    selected_status = st.selectbox(
+                        "Update Status",
+                        status_options,
+                        index=(
+                            status_options.index(current_status)
+                            if current_status in status_options
+                            else 0
+                        ),
+                        key=f"status_{request_id}"
+                    )
+
+                    if st.button(
+                        "Update Status",
+                        key=f"update_status_{request_id}"
+                    ):
+
+                        admin_supabase.table("recovery_requests").update({
+                            "status": selected_status
+                        }).eq(
+                            "id", request_id
+                        ).execute()
+
+                        st.success("Request status updated successfully!")
+                        st.rerun()
+
+        else:
+
+            st.info("No recovery requests available.")
+
+        st.divider()
+
+        # ------------------------------------------
+        # CSV DOWNLOAD
+        # ------------------------------------------
+
+        st.subheader("📥 Download Recovery Requests")
+
+        if all_requests:
+
+            import pandas as pd
+
+            export_rows = []
+
+            for request in all_requests:
+
+                student_details = students_map.get(
+                    request.get("student_id"), {}
+                )
+
+                item_details = found_items_map.get(
+                    request.get("found_item_id"), {}
+                )
+
+                export_rows.append({
+                    "Request ID": request.get("id"),
+                    "Student Name": student_details.get("full_name", ""),
+                    "Email": student_details.get("email", ""),
+                    "Phone": student_details.get("phone", ""),
+                    "Item Name": item_details.get("item_name", ""),
+                    "Location": item_details.get("location", ""),
+                    "Status": request.get("status", ""),
+                    "Created At": request.get("created_at", "")
+                })
+
+            export_df = pd.DataFrame(export_rows)
+
+            csv_data = export_df.to_csv(index=False).encode("utf-8")
+
+            st.download_button(
+                "Download CSV",
+                data=csv_data,
+                file_name="recovery_requests.csv",
+                mime="text/csv"
+            )
+
+        else:
+
+            st.info("No data available to download.")
+
+        st.divider()
+
+        # ------------------------------------------
+        # ADMIN LOGOUT
+        # ------------------------------------------
+
+        if st.button("🚪 Admin Logout", key="admin_logout_button"):
+
+            try:
+                admin_supabase.auth.sign_out()
+            except Exception:
+                pass
+
+            st.session_state.admin_logged_in = False
+            st.session_state.admin_access_token = None
+            st.session_state.admin_refresh_token = None
+
+            st.success("Admin logged out successfully!")
+
+            st.rerun()
+
 
 # --------------------------------------------------
 # 12. CLOSE DATABASE CONNECTION
 # --------------------------------------------------
 
 connection.close()
-
