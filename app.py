@@ -606,7 +606,131 @@ else:
 # 6. REPORT A FOUND ITEM
 # --------------------------------------------------
 
-if selected_page == "📦 Report Item":
+if selected_page == "🏠 Home":
+
+    st.title("🔎 FindIt AI")
+    st.subheader("Your Smart Campus Lost-and-Found Assistant")
+
+    st.markdown(
+        "Welcome to **FindIt AI** — a smarter way to reconnect lost "
+        "belongings with the people who own them. Whether you have found "
+        "something or lost something, this platform helps make the recovery "
+        "process simple and organized."
+    )
+
+    st.divider()
+
+    st.header("👋 Welcome Back!")
+    if st.session_state.get("student_logged_in", False):
+        st.write("You are signed in as a student. Use the sections below to report found items, search for your belongings, and track your recovery requests.")
+    elif st.session_state.get("admin_logged_in", False):
+        st.write("You are signed in as an administrator. Review reported items, manage recovery requests, and help students recover their belongings.")
+    else:
+        st.write("Explore the campus lost-and-found features and help items find their way home.")
+
+    st.header("⚡ How FindIt AI Works")
+    step1, step2, step3 = st.columns(3)
+    with step1:
+        st.markdown("### 1. 📦 Report")
+        st.write("If you find an item on campus, add its photo, name, description, and location.")
+    with step2:
+        st.markdown("### 2. 🔍 Search")
+        st.write("Search by item details or use AI image search to discover visually similar items.")
+    with step3:
+        st.markdown("### 3. 🤝 Recover")
+        st.write("Submit a recovery request for a possible match and follow its progress from your account.")
+
+    st.divider()
+    st.header("✨ Platform Features")
+    feature_left, feature_right = st.columns(2)
+    with feature_left:
+        st.markdown("**📦 Report Found Items**")
+        st.write("Save found-item details and photos so owners can identify them.")
+        st.markdown("**🔍 Smart Text Search**")
+        st.write("Find items using names, descriptions, and locations.")
+        st.markdown("**📋 Found Items Directory**")
+        st.write("Browse items that have been reported on campus.")
+    with feature_right:
+        st.markdown("**🤖 AI Image Search**")
+        st.write("Upload a picture and look for visually similar found items.")
+        st.markdown("**📩 Recovery Requests**")
+        st.write("Send a request for an item that may belong to you and track its status.")
+        st.markdown("**🔐 Admin Dashboard**")
+        st.write("Authorized administrators can review requests and update recovery status.")
+
+    st.divider()
+    st.header("🎒 Items You Can Search For")
+    item1, item2, item3 = st.columns(3)
+    with item1:
+        st.write("🪪 ID cards")
+        st.write("👛 Wallets")
+    with item2:
+        st.write("🔑 Keys")
+        st.write("🎒 Bags")
+    with item3:
+        st.write("🎧 Earphones")
+        st.write("📱 Other personal belongings")
+
+    st.info("💙 Our goal: make campus lost-and-found faster, easier, and more reliable with AI-powered search.")
+    st.caption("FindIt AI — Helping lost belongings find their way home.")
+
+# --------------------------------------------------
+# SHARE PAGE — RESPONSIVE QR CODE
+# --------------------------------------------------
+
+elif selected_page == "📤 Share":
+
+    st.title("🔎 FindIt AI")
+    st.header("📱 Share FindIt AI")
+    st.write("Scan this QR code with your phone camera to open the FindIt AI website.")
+
+    website_url = "https://ai-powered-lost-and-found-system-using-image-similarity-search.streamlit.app/"
+
+    try:
+        qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=12,
+            border=4
+        )
+        qr.add_data(website_url)
+        qr.make(fit=True)
+
+        qr_image = qr.make_image(
+            fill_color="#071426",
+            back_color="white"
+        ).convert("RGB")
+
+        qr_buffer = BytesIO()
+        qr_image.save(qr_buffer, format="PNG")
+        qr_buffer.seek(0)
+        qr_bytes = qr_buffer.getvalue()
+
+        qr_col_left, qr_col, qr_col_right = st.columns([1, 2, 1])
+        with qr_col:
+            st.image(qr_bytes, caption="Scan to open FindIt AI", width=280)
+
+        st.download_button(
+            label="⬇️ Download QR Code",
+            data=qr_bytes,
+            file_name="FindItAI_QR_Code.png",
+            mime="image/png",
+            use_container_width=True
+        )
+
+        st.code(website_url, language=None)
+        st.caption("On your phone: open the camera, point it at the QR code, and tap the link that appears. If scanning is unavailable, open the website address shown above.")
+
+    except Exception as qr_error:
+        st.error("QR code could not be generated. You can still open FindIt AI using the website address below.")
+        st.code(website_url, language=None)
+        st.code(str(qr_error))
+
+# --------------------------------------------------
+# 6. REPORT A FOUND ITEM
+# --------------------------------------------------
+
+elif selected_page == "📦 Report Item":
 
     st.title("🔎 FindIt AI")
 
@@ -1877,6 +2001,9 @@ elif selected_page == "📩 Recovery Requests":
 
     st.divider()
     
+
+
+# --------------------------------------------------
 # 11. STUDENT LOGIN, SIGN UP, PROFILE,
 #     MY RECOVERY REQUESTS AND ADMIN DASHBOARD
 # -------------------------------------------------
@@ -2144,6 +2271,7 @@ elif selected_page == "👤 Student Login":
     else:
 
         st.success("You are logged in successfully!")
+
         student_supabase = None
 
         try:
@@ -2398,6 +2526,7 @@ elif selected_page == "👤 Student Login":
 # ==================================================
 # ADMIN LOGIN AND DASHBOARD
 # ==================================================
+
 elif selected_page == "🔐 Admin":
 
     ADMIN_UID = "1fa8098e-27be-46c1-9916-1e20506f9fa5"
@@ -2690,7 +2819,10 @@ elif selected_page == "🔐 Admin":
                     recovery_rate = 0
                     pending_rate = 0
                     contacted_rate = 0
-                    rate_col1.metric(
+
+                rate_col1, rate_col2, rate_col3 = st.columns(3)
+
+                rate_col1.metric(
                     "Recovery Success Rate",
                     f"{recovery_rate:.1f}%"
                 )
@@ -3291,7 +3423,6 @@ elif selected_page == "🔐 Admin":
             st.rerun()
 
 
-# --------------------------------------------------
 # --------------------------------------------------
 # 12. CLOSE DATABASE CONNECTION
 # --------------------------------------------------
