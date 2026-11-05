@@ -496,6 +496,7 @@ if not (
                 use_container_width=True,
                 key="welcome_student_button"
             ):
+
                 st.session_state.selected_page = "👤 Student Login"
                 st.rerun()
 
@@ -506,6 +507,7 @@ if not (
                 use_container_width=True,
                 key="welcome_admin_button"
             ):
+
                 st.session_state.selected_page = "🔐 Admin"
                 st.rerun()
 
@@ -533,6 +535,10 @@ else:
 
     st.title("🔎 FindIt AI")
 
+    # ----------------------------------------------
+    # STUDENT NAVIGATION
+    # ----------------------------------------------
+
     if st.session_state.student_logged_in:
 
         st.caption("👤 Student Account")
@@ -548,6 +554,10 @@ else:
             "👤 Student Login"
         ]
 
+    # ----------------------------------------------
+    # ADMIN NAVIGATION
+    # ----------------------------------------------
+
     elif st.session_state.admin_logged_in:
 
         st.caption("🔐 Administrator Account")
@@ -560,8 +570,13 @@ else:
             "📋 All Found Items",
             "📩 Recovery Requests",
             "📤 Share",
+            "👤 Student Login",
             "🔐 Admin"
         ]
+
+    # ----------------------------------------------
+    # RESET NAVIGATION WHEN ROLE CHANGES
+    # ----------------------------------------------
 
     if (
         "previous_navigation_options" not in st.session_state
@@ -573,6 +588,10 @@ else:
 
         if "main_navigation" in st.session_state:
             del st.session_state["main_navigation"]
+
+    # ----------------------------------------------
+    # DISPLAY NAVIGATION
+    # ----------------------------------------------
 
     selected_page = st.radio(
         "Navigation",
