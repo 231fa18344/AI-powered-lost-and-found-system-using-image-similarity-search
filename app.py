@@ -2990,7 +2990,8 @@ elif selected_page == "🔐 Admin":
                 filtered_requests = []
 
                 for request in recovery_requests:
-                                        item_details = request.get("item_details", {})
+
+                    item_details = request.get("item_details", {})
                     student_details = request.get("student_details", {})
 
                     searchable_text = " ".join([
