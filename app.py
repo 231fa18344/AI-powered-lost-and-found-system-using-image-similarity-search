@@ -587,7 +587,7 @@ else:
 # 6. REPORT A FOUND ITEM
 # --------------------------------------------------
 
-elif selected_page == "📦 Report Item":
+if selected_page == "📦 Report Item":
 
     st.title("🔎 FindIt AI")
 
