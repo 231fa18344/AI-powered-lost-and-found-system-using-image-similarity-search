@@ -1915,46 +1915,84 @@ elif selected_page == "👤 Student Login":
 
         with login_tab:
 
-            st.subheader("Student Login")
+            with st.form("student_login_form"):
 
-            login_email = st.text_input(
-                "Email",
-                key="student_login_email"
-            )
+                student_email = st.text_input(
+                    "Email Address",
+                    key="student_login_email"
+                )
 
-            login_password = st.text_input(
-                "Password",
-                type="password",
-                key="student_login_password"
-            )
+                student_password = st.text_input(
+                    "Password",
+                    type="password",
+                    key="student_login_password"
+                )
 
-            if st.button("Login", key="student_login_button"):
+                login_button = st.form_submit_button(
+                    "Login"
+                )
 
-                if not login_email or not login_password:
-                    st.warning("Please enter email and password.")
+            if login_button:
+
+                if not student_email.strip() or not student_password:
+
+                    st.warning(
+                        "Please enter your email and password."
+                    )
 
                 else:
 
                     try:
 
-                        login_response = supabase.auth.sign_in_with_password({
-                            "email": login_email,
-                            "password": login_password
-                        })
+                        login_client = create_client(
+                            st.secrets["SUPABASE_URL"],
+                            st.secrets["SUPABASE_KEY"]
+                        )
 
-                        if login_response.user:
+                        login_response = (
+                            login_client.auth.sign_in_with_password({
+                                "email": student_email.strip(),
+                                "password": student_password
+                            })
+                        )
+
+                        logged_user = login_response.user
+                        student_session = login_response.session
+
+                        if logged_user and student_session:
+
+                            st.session_state.student_access_token = (
+                                student_session.access_token
+                            )
+
+                            st.session_state.student_refresh_token = (
+                                student_session.refresh_token
+                            )
+
+                            st.session_state.student_user_id = str(
+                                logged_user.id
+                            )
+
+                            st.session_state.student_email = (
+                                logged_user.email
+                            )
 
                             st.session_state.student_logged_in = True
-                            st.session_state.student_user_id = login_response.user.id
-                            st.session_state.student_access_token = login_response.session.access_token
-                            st.session_state.student_refresh_token = login_response.session.refresh_token
 
-                            st.success("Login successful!")
+                            st.success("Student login successful!")
+
                             st.rerun()
+
+                        else:
+
+                            st.error(
+                                "Login failed. Please verify your account."
+                            )
 
                     except Exception as login_error:
 
-                        st.error("Invalid email or password.")
+                        st.error("Unable to login.")
+
                         st.code(str(login_error))
 
         # ------------------------------------------
@@ -1963,93 +2001,156 @@ elif selected_page == "👤 Student Login":
 
         with signup_tab:
 
-            st.subheader("Create Student Account")
+            with st.form("student_signup_form"):
 
-            signup_name = st.text_input(
-                "Full Name",
-                key="student_signup_name"
-            )
+                signup_name = st.text_input(
+                    "Full Name",
+                    key="student_signup_name"
+                )
 
-            signup_email = st.text_input(
-                "Email",
-                key="student_signup_email"
-            )
+                signup_email = st.text_input(
+                    "Email Address",
+                    key="student_signup_email"
+                )
 
-            signup_phone = st.text_input(
-                "Phone Number",
-                key="student_signup_phone"
-            )
+                signup_phone = st.text_input(
+                    "Phone Number",
+                    max_chars=10,
+                    key="student_signup_phone"
+                )
 
-            signup_password = st.text_input(
-                "Password",
-                type="password",
-                key="student_signup_password"
-            )
+                signup_password = st.text_input(
+                    "Create Password",
+                    type="password",
+                    key="student_signup_password"
+                )
 
-            confirm_password = st.text_input(
-                "Confirm Password",
-                type="password",
-                key="student_confirm_password"
-            )
+                signup_button = st.form_submit_button(
+                    "Create Account"
+                )
 
-            if st.button("Create Account", key="student_signup_button"):
+            if signup_button:
 
-                if not signup_name or not signup_email or not signup_phone or not signup_password:
-                    st.warning("Please fill all fields.")
+                if not signup_name.strip():
 
-                elif len(signup_phone) != 10 or not signup_phone.isdigit():
-                    st.warning("Enter a valid 10-digit phone number.")
+                    st.warning("Please enter your full name.")
+
+                elif not signup_email.strip():
+
+                    st.warning("Please enter your email.")
+
+                elif (
+                    not signup_phone.isdigit()
+                    or len(signup_phone) != 10
+                ):
+
+                    st.warning(
+                        "Enter a valid 10-digit phone number."
+                    )
 
                 elif len(signup_password) < 6:
-                    st.warning("Password must contain at least 6 characters.")
 
-                elif signup_password != confirm_password:
-                    st.warning("Passwords do not match.")
+                    st.warning(
+                        "Password must contain at least 6 characters."
+                    )
 
                 else:
 
                     try:
 
-                        signup_response = supabase.auth.sign_up({
-                            "email": signup_email,
+                        signup_client = create_client(
+                            st.secrets["SUPABASE_URL"],
+                            st.secrets["SUPABASE_KEY"]
+                        )
+
+                        signup_response = signup_client.auth.sign_up({
+                            "email": signup_email.strip(),
                             "password": signup_password
                         })
 
-                        if signup_response.user:
+                        new_user = signup_response.user
+                        new_session = signup_response.session
 
-                            student_uid = signup_response.user.id
+                        if new_user:
 
-                            supabase.table("student_profiles").upsert({
-                                "id": student_uid,
-                                "full_name": signup_name,
-                                "email": signup_email,
-                                "phone": signup_phone
-                            }).execute()
+                            if new_session:
 
-                            st.success(
-                                "Account created successfully! Please login."
+                                profile_client = create_client(
+                                    st.secrets["SUPABASE_URL"],
+                                    st.secrets["SUPABASE_KEY"]
+                                )
+
+                                profile_client.auth.set_session(
+                                    new_session.access_token,
+                                    new_session.refresh_token
+                                )
+
+                                profile_client.table(
+                                    "student_profiles"
+                                ).upsert({
+                                    "id": str(new_user.id),
+                                    "full_name": signup_name.strip(),
+                                    "email": signup_email.strip(),
+                                    "phone": signup_phone.strip()
+                                }).execute()
+
+                                st.session_state.student_access_token = (
+                                    new_session.access_token
+                                )
+
+                                st.session_state.student_refresh_token = (
+                                    new_session.refresh_token
+                                )
+
+                                st.session_state.student_user_id = str(
+                                    new_user.id
+                                )
+
+                                st.session_state.student_email = (
+                                    signup_email.strip()
+                                )
+
+                                st.session_state.student_logged_in = True
+
+                                st.success(
+                                    "Account created successfully!"
+                                )
+
+                                st.rerun()
+
+                            else:
+
+                                st.success(
+                                    "Account created. Please verify your "
+                                    "email and then login."
+                                )
+
+                        else:
+
+                            st.error(
+                                "Unable to create your account."
                             )
 
                     except Exception as signup_error:
 
-                        st.error("Unable to create account.")
+                        st.error("Sign up failed.")
+
                         st.code(str(signup_error))
+
+    # ==================================================
+    # LOGGED-IN STUDENT DASHBOARD
+    # ==================================================
 
     else:
 
-        # ------------------------------------------
-        # STUDENT DASHBOARD
-        # ------------------------------------------
-
-        st.success("You are logged in!")
-
-        student_uid = st.session_state.student_user_id
+        st.success("You are logged in successfully!")
+                student_supabase = None
 
         try:
 
             student_supabase = create_client(
-                SUPABASE_URL,
-                SUPABASE_KEY
+                st.secrets["SUPABASE_URL"],
+                st.secrets["SUPABASE_KEY"]
             )
 
             student_supabase.auth.set_session(
@@ -2057,125 +2158,118 @@ elif selected_page == "👤 Student Login":
                 st.session_state.student_refresh_token
             )
 
-            profile_response = (
-                student_supabase.table("student_profiles")
-                .select("*")
-                .eq("id", student_uid)
-                .execute()
+        except Exception as session_error:
+
+            st.error(
+                "Your student session expired. Please login again."
             )
 
-            student_profile = (
-                profile_response.data[0]
-                if profile_response.data
-                else {}
-            )
+            st.code(str(session_error))
 
-            st.subheader("👤 My Profile")
+            st.session_state.student_logged_in = False
+            st.session_state.student_access_token = None
+            st.session_state.student_refresh_token = None
+            st.session_state.student_user_id = None
 
-            profile_name = st.text_input(
-                "Full Name",
-                value=student_profile.get("full_name", "")
-            )
+            st.rerun()
 
-            profile_email = st.text_input(
-                "Email",
-                value=student_profile.get("email", ""),
-                disabled=True
-            )
+        if student_supabase is not None:
 
-            profile_phone = st.text_input(
-                "Phone Number",
-                value=student_profile.get("phone", "")
-            )
-
-            if st.button("Update Profile"):
-
-                student_supabase.table("student_profiles").upsert({
-                    "id": student_uid,
-                    "full_name": profile_name,
-                    "email": profile_email,
-                    "phone": profile_phone
-                }).execute()
-
-                st.success("Profile updated successfully!")
-                st.rerun()
-
-            st.divider()
+            student_uid = st.session_state.student_user_id
 
             # ------------------------------------------
-            # MY NOTIFICATIONS
+            # LOAD STUDENT PROFILE
             # ------------------------------------------
-
-            st.subheader("🔔 My Notifications")
 
             try:
 
-                notifications_response = (
-                    student_supabase.table("notifications")
-                    .select("id, title, message, is_read, created_at")
-                    .eq("user_id", student_uid)
-                    .order("created_at", desc=True)
+                profile_response = (
+                    student_supabase.table("student_profiles")
+                    .select("full_name, email, phone")
+                    .eq("id", student_uid)
+                    .maybe_single()
                     .execute()
                 )
 
-                my_notifications = notifications_response.data or []
+                student_profile = profile_response.data or {}
 
-                unread_count = sum(
-                    1 for notification in my_notifications
-                    if not notification.get("is_read", False)
+            except Exception as profile_error:
+
+                student_profile = {}
+
+                st.error("Unable to load student profile.")
+
+                st.code(str(profile_error))
+
+            st.divider()
+
+            st.subheader("👤 My Profile")
+
+            with st.form("student_profile_update_form"):
+
+                profile_name = st.text_input(
+                    "Full Name",
+                    value=student_profile.get("full_name", "")
                 )
 
-                st.info(
-                    f"🔔 You have {unread_count} unread notification(s)."
+                profile_email = st.text_input(
+                    "Email Address",
+                    value=student_profile.get(
+                        "email",
+                        st.session_state.get("student_email", "")
+                    ),
+                    disabled=True
                 )
 
-                if my_notifications:
+                profile_phone = st.text_input(
+                    "Phone Number",
+                    value=student_profile.get("phone", ""),
+                    max_chars=10
+                )
 
-                    for notification in my_notifications:
+                update_profile = st.form_submit_button(
+                    "Update Profile"
+                )
 
-                        with st.container(border=True):
+            if update_profile:
 
-                            if notification.get("is_read", False):
-                                st.write(
-                                    f"📩 **{notification.get('title', 'Notification')}**"
-                                )
-                            else:
-                                st.write(
-                                    f"🔵 **{notification.get('title', 'Notification')}**"
-                                )
+                if not profile_name.strip():
 
-                            st.write(notification.get("message", ""))
+                    st.warning("Please enter your name.")
 
-                            st.caption(
-                                "Received: "
-                                + str(notification.get("created_at", ""))[:19]
-                            )
+                elif (
+                    not profile_phone.isdigit()
+                    or len(profile_phone) != 10
+                ):
 
-                            if not notification.get("is_read", False):
-
-                                if st.button(
-                                    "Mark as Read",
-                                    key=f"read_notification_{notification['id']}"
-                                ):
-
-                                    student_supabase.table("notifications").update({
-                                        "is_read": True
-                                    }).eq(
-                                        "id", notification["id"]
-                                    ).eq(
-                                        "user_id", student_uid
-                                    ).execute()
-
-                                    st.rerun()
+                    st.warning(
+                        "Enter a valid 10-digit phone number."
+                    )
 
                 else:
 
-                    st.info("You don't have any notifications yet.")
+                    try:
 
-            except Exception as notification_error:
+                        student_supabase.table(
+                            "student_profiles"
+                        ).upsert({
+                            "id": student_uid,
+                            "full_name": profile_name.strip(),
+                            "email": profile_email,
+                            "phone": profile_phone.strip()
+                        }).execute()
 
-                st.error("Unable to load notifications.")
-                st.code(str(notification_error))
+                        st.success(
+                            "Profile updated successfully!"
+                        )
+
+                        st.rerun()
+
+                    except Exception as update_error:
+
+                        st.error("Unable to update profile.")
+
+                        st.code(str(update_error))
 
             st.divider()
 
@@ -2183,75 +2277,96 @@ elif selected_page == "👤 Student Login":
             # MY RECOVERY REQUESTS
             # ------------------------------------------
 
-            st.subheader("📦 My Recovery Requests")
+            st.subheader("📩 My Recovery Requests")
 
-            requests_response = (
-                student_supabase.table("recovery_requests")
-                .select("*")
-                .eq("student_id", student_uid)
-                .order("created_at", desc=True)
-                .execute()
-            )
+            try:
 
-            my_requests = requests_response.data or []
+                my_requests_response = (
+                    student_supabase.table("recovery_requests")
+                    .select(
+                        "id, item_id, requester_name, message, "
+                        "status, created_at, "
+                        "found_items(item_name, location, image_path)"
+                    )
+                    .eq("user_id", student_uid)
+                    .order("created_at", desc=True)
+                    .execute()
+                )
 
-            if my_requests:
+                my_requests = my_requests_response.data or []
 
-                for request in my_requests:
+                if my_requests:
 
-                    with st.container(border=True):
+                    st.success(
+                        f"You have submitted {len(my_requests)} request(s)."
+                    )
 
-                        st.write(
-                            f"**Request ID:** {request.get('id', '')}"
+                    for request in my_requests:
+
+                        item_details = (
+                            request.get("found_items") or {}
                         )
 
-                        st.write(
-                            f"**Status:** {request.get('status', 'Pending')}"
-                        )
+                        with st.container(border=True):
 
-                        item_details = {}
-
-                        try:
-
-                            item_response = (
-                                student_supabase.table("found_items")
-                                .select("*")
-                                .eq("id", request.get("found_item_id"))
-                                .execute()
+                            st.write(
+                                f"**Item:** "
+                                f"{item_details.get('item_name', 'Unknown item')}"
                             )
 
-                            if item_response.data:
-                                item_details = item_response.data[0]
+                            st.write(
+                                f"**Location:** "
+                                f"{item_details.get('location', 'Not specified')}"
+                            )
 
-                        except Exception:
-                            pass
+                            item_image = item_details.get("image_path")
 
-                        st.write(
-                            f"**Item:** {item_details.get('item_name', 'Item details unavailable')}"
-                        )
+                            if item_image:
 
-                        st.write(
-                            f"**Location:** {item_details.get('location', 'Not specified')}"
-                        )
+                                st.image(
+                                    item_image,
+                                    caption="Found Item Photo",
+                                    width=250
+                                )
 
-                        # SHOW FOUND ITEM PHOTO
+                            else:
 
-                        item_image = item_details.get("image_path")
+                                st.info(
+                                    "No photo available for this item."
+                                )
 
-                        if item_image:
+                            st.write(
+                                f"**Message:** "
+                                f"{request.get('message', '')}"
+                            )
 
-                            try:
-                                st.image(item_image, width=200)
-                            except Exception:
-                                pass
+                            st.write(
+                                f"**Request Date:** "
+                                f"{str(request.get('created_at', ''))[:10]}"
+                            )
 
-                        st.write(
-                            f"**Submitted:** {str(request.get('created_at', ''))[:19]}"
-                        )
+                            request_status = request.get(
+                                "status",
+                                "Pending"
+                            )
 
-            else:
+                            st.write(
+                                f"**Status:** {request_status}"
+                            )
 
-                st.info("You have not submitted any recovery requests yet.")
+                else:
+
+                    st.info(
+                        "You have not submitted any recovery requests yet."
+                    )
+
+            except Exception as request_error:
+
+                st.error(
+                    "Unable to load your recovery requests."
+                )
+
+                st.code(str(request_error))
 
             st.divider()
 
@@ -2259,7 +2374,10 @@ elif selected_page == "👤 Student Login":
             # STUDENT LOGOUT
             # ------------------------------------------
 
-            if st.button("🚪 Logout", key="student_logout_button"):
+            if st.button(
+                "🚪 Student Logout",
+                key="student_logout_button"
+            ):
 
                 try:
                     student_supabase.auth.sign_out()
@@ -2270,26 +2388,21 @@ elif selected_page == "👤 Student Login":
                 st.session_state.student_access_token = None
                 st.session_state.student_refresh_token = None
                 st.session_state.student_user_id = None
+                st.session_state.student_email = None
 
                 st.success("Logged out successfully!")
+
                 st.rerun()
-
-        except Exception as student_error:
-
-            st.error("Unable to load student dashboard.")
-            st.code(str(student_error))
 
 
 # ==================================================
 # ADMIN LOGIN AND DASHBOARD
 # ==================================================
-
 elif selected_page == "🔐 Admin":
 
     ADMIN_UID = "1fa8098e-27be-46c1-9916-1e20506f9fa5"
 
     st.title("🔎 FindIt AI")
-
     st.header("🔐 Admin Login")
 
     if "admin_logged_in" not in st.session_state:
@@ -2301,294 +2414,855 @@ elif selected_page == "🔐 Admin":
     if "admin_refresh_token" not in st.session_state:
         st.session_state.admin_refresh_token = None
 
+    # ----------------------------------------------
+    # ADMIN LOGIN
+    # ----------------------------------------------
+
     if not st.session_state.admin_logged_in:
 
-        admin_email = st.text_input(
-            "Admin Email",
-            key="admin_email"
-        )
+        with st.form("admin_login_form"):
 
-        admin_password = st.text_input(
-            "Admin Password",
-            type="password",
-            key="admin_password"
-        )
+            admin_email = st.text_input(
+                "Admin Email",
+                key="admin_email_input"
+            )
 
-        if st.button("Admin Login", key="admin_login_button"):
+            admin_password = st.text_input(
+                "Admin Password",
+                type="password",
+                key="admin_password_input"
+            )
 
-            try:
+            login_button = st.form_submit_button(
+                "Login"
+            )
 
-                admin_response = supabase.auth.sign_in_with_password({
-                    "email": admin_email,
-                    "password": admin_password
-                })
+        if login_button:
 
-                if admin_response.user:
+            if not admin_email.strip() or not admin_password:
 
-                    if admin_response.user.id == ADMIN_UID:
+                st.warning(
+                    "Please enter your email and password."
+                )
+
+            else:
+
+                try:
+
+                    login_client = create_client(
+                        st.secrets["SUPABASE_URL"],
+                        st.secrets["SUPABASE_KEY"]
+                    )
+
+                    login_response = (
+                        login_client.auth.sign_in_with_password({
+                            "email": admin_email.strip(),
+                            "password": admin_password
+                        })
+                    )
+
+                    logged_user = login_response.user
+                    admin_session = login_response.session
+
+                    if (
+                        logged_user
+                        and str(logged_user.id) == ADMIN_UID
+                        and admin_session
+                    ):
+
+                        st.session_state.admin_access_token = (
+                            admin_session.access_token
+                        )
+
+                        st.session_state.admin_refresh_token = (
+                            admin_session.refresh_token
+                        )
 
                         st.session_state.admin_logged_in = True
-                        st.session_state.admin_access_token = admin_response.session.access_token
-                        st.session_state.admin_refresh_token = admin_response.session.refresh_token
 
                         st.success("Admin login successful!")
+
                         st.rerun()
 
                     else:
 
-                        supabase.auth.sign_out()
-                        st.error("You are not authorized as Admin.")
+                        login_client.auth.sign_out()
 
-            except Exception as admin_error:
+                        st.error(
+                            "You are not authorized as admin."
+                        )
 
-                st.error("Invalid admin credentials.")
-                st.code(str(admin_error))
+                except Exception as login_error:
+
+                    st.error(
+                        "Login failed. Check your email and password."
+                    )
+
+                    st.code(str(login_error))
+
+    # ----------------------------------------------
+    # ADMIN DASHBOARD
+    # ----------------------------------------------
 
     else:
 
-        st.success("Welcome Admin!")
-
-        admin_supabase = create_client(
-            SUPABASE_URL,
-            SUPABASE_KEY
-        )
-
-        admin_supabase.auth.set_session(
-            st.session_state.admin_access_token,
-            st.session_state.admin_refresh_token
-        )
+        st.success("Admin logged in successfully!")
 
         # ------------------------------------------
-        # LOAD DASHBOARD DATA
+        # RESTORE ADMIN SESSION
         # ------------------------------------------
 
-        recovery_response = (
-            admin_supabase.table("recovery_requests")
-            .select("*")
-            .order("created_at", desc=True)
-            .execute()
-        )
+        admin_supabase = None
 
-        found_response = (
-            admin_supabase.table("found_items")
-            .select("*")
-            .execute()
-        )
+        try:
 
-        students_response = (
-            admin_supabase.table("student_profiles")
-            .select("*")
-            .execute()
-        )
+            admin_supabase = create_client(
+                st.secrets["SUPABASE_URL"],
+                st.secrets["SUPABASE_KEY"]
+            )
 
-        all_requests = recovery_response.data or []
-        all_found_items = found_response.data or []
-        all_students = students_response.data or []
+            admin_supabase.auth.set_session(
+                st.session_state.admin_access_token,
+                st.session_state.admin_refresh_token
+            )
 
-        found_items_map = {
-            item.get("id"): item
-            for item in all_found_items
-        }
+        except Exception as session_error:
 
-        students_map = {
-            student.get("id"): student
-            for student in all_students
-        }
+            st.error("Admin session expired. Please login again.")
 
-        # ------------------------------------------
-        # DASHBOARD METRICS
-        # ------------------------------------------
+            st.code(str(session_error))
 
-        st.header("📊 Admin Dashboard")
+            st.session_state.admin_logged_in = False
+            st.session_state.admin_access_token = None
+            st.session_state.admin_refresh_token = None
 
-        total_requests = len(all_requests)
-        total_items = len(all_found_items)
-        total_students = len(all_students)
+            st.rerun()
 
-        pending_requests = sum(
-            1 for request in all_requests
-            if request.get("status") == "Pending"
-        )
+        if admin_supabase is not None:
 
-        contacted_requests = sum(
-            1 for request in all_requests
-            if request.get("status") == "Contacted"
-        )
+            st.subheader("📋 Recovery Requests Dashboard")
 
-        returned_requests = sum(
-            1 for request in all_requests
-            if request.get("status") == "Returned"
-        )
+            try:
 
-        rejected_requests = sum(
-            1 for request in all_requests
-            if request.get("status") == "Rejected"
-        )
+                # ----------------------------------
+                # LOAD RECOVERY REQUESTS
+                # ----------------------------------
 
-        col1, col2, col3, col4 = st.columns(4)
+                requests_response = (
+                    admin_supabase.table("recovery_requests")
+                    .select(
+                        "id, item_id, user_id, requester_name, "
+                        "requester_contact, message, status, created_at"
+                    )
+                    .order("created_at", desc=True)
+                    .execute()
+                )
 
-        col1.metric("Total Requests", total_requests)
-        col2.metric("Found Items", total_items)
-        col3.metric("Students", total_students)
-        col4.metric("Pending Requests", pending_requests)
+                recovery_requests = requests_response.data or []
 
-        st.divider()
+                # ----------------------------------
+                # LOAD FOUND ITEM DETAILS
+                # ----------------------------------
 
-        # ------------------------------------------
-        # REQUEST STATUS SUMMARY
-        # ------------------------------------------
+                items_response = (
+                    admin_supabase.table("found_items")
+                    .select("*")
+                    .execute()
+                )
 
-        st.subheader("📌 Request Status Summary")
+                found_items = items_response.data or []
 
-        status_col1, status_col2, status_col3, status_col4 = st.columns(4)
+                items_by_id = {
+                    str(item.get("id")): item
+                    for item in found_items
+                }
 
-        status_col1.metric("Pending", pending_requests)
-        status_col2.metric("Contacted", contacted_requests)
-        status_col3.metric("Returned", returned_requests)
-        status_col4.metric("Rejected", rejected_requests)
+                # ----------------------------------
+                # LOAD STUDENT PROFILES
+                # ----------------------------------
 
-        st.divider()
+                student_ids = list(set(
+                    request.get("user_id")
+                    for request in recovery_requests
+                    if request.get("user_id")
+                ))
 
-        # ------------------------------------------
-        # REQUEST DETAILS
-        # ------------------------------------------
+                profiles_by_id = {}
 
-        st.subheader("📋 All Recovery Requests")
+                if student_ids:
 
-        if all_requests:
-
-            for request in all_requests:
-
-                request_id = request.get("id")
-                student_id = request.get("student_id")
-                found_item_id = request.get("found_item_id")
-
-                student_details = students_map.get(student_id, {})
-                item_details = found_items_map.get(found_item_id, {})
-
-                with st.container(border=True):
-
-                    st.write(f"**Request ID:** {request_id}")
-
-                    st.write(
-                        f"**Student:** {student_details.get('full_name', 'Unknown')}"
+                    profiles_response = (
+                        admin_supabase.table("student_profiles")
+                        .select("id, full_name, email, phone")
+                        .in_("id", student_ids)
+                        .execute()
                     )
 
-                    st.write(
-                        f"**Email:** {student_details.get('email', 'Not available')}"
+                    student_profiles = profiles_response.data or []
+
+                    profiles_by_id = {
+                        str(profile.get("id")): profile
+                        for profile in student_profiles
+                    }
+
+                # ----------------------------------
+                # ATTACH ITEM AND STUDENT DETAILS
+                # ----------------------------------
+
+                for request in recovery_requests:
+
+                    request["item_details"] = items_by_id.get(
+                        str(request.get("item_id")),
+                        {}
                     )
 
-                    st.write(
-                        f"**Phone:** {student_details.get('phone', 'Not available')}"
+                    request["student_details"] = profiles_by_id.get(
+                        str(request.get("user_id")),
+                        {}
                     )
 
-                    st.write(
-                        f"**Item:** {item_details.get('item_name', 'Unknown')}"
-                    )
+                # ----------------------------------
+                # REQUEST STATISTICS
+                # ----------------------------------
 
-                    st.write(
-                        f"**Location:** {item_details.get('location', 'Not specified')}"
-                    )
+                total_requests = len(recovery_requests)
 
-                    st.write(
-                        f"**Current Status:** {request.get('status', 'Pending')}"
-                    )
+                pending_count = sum(
+                    1 for r in recovery_requests
+                    if r.get("status") == "Pending"
+                )
 
-                    st.write(
-                        f"**Submitted:** {str(request.get('created_at', ''))[:19]}"
-                    )
+                contacted_count = sum(
+                    1 for r in recovery_requests
+                    if r.get("status") == "Contacted"
+                )
 
-                    # ----------------------------------
-                    # UPDATE REQUEST STATUS
-                    # ----------------------------------
+                returned_count = sum(
+                    1 for r in recovery_requests
+                    if r.get("status") == "Returned"
+                )
 
-                    current_status = request.get("status", "Pending")
+                rejected_count = sum(
+                    1 for r in recovery_requests
+                    if r.get("status") == "Rejected"
+                )
 
-                    status_options = [
+                active_count = pending_count + contacted_count
+
+                st.subheader("📊 Recovery Request Statistics")
+
+                col1, col2, col3 = st.columns(3)
+
+                col1.metric("📋 Total Requests", total_requests)
+                col2.metric("⏳ Pending", pending_count)
+                col3.metric("📞 Contacted", contacted_count)
+
+                col4, col5, col6 = st.columns(3)
+
+                col4.metric("✅ Returned", returned_count)
+                col5.metric("❌ Rejected", rejected_count)
+                col6.metric("🔄 Active", active_count)
+
+                st.divider()
+
+                # ----------------------------------
+                # RECOVERY PERFORMANCE
+                # ----------------------------------
+
+                st.header("📈 Advanced Analytics")
+
+                if total_requests:
+
+                    recovery_rate = (
+                        returned_count / total_requests
+                    ) * 100
+
+                    pending_rate = (
+                        pending_count / total_requests
+                    ) * 100
+
+                    contacted_rate = (
+                        contacted_count / total_requests
+                    ) * 100
+
+                else:
+
+                    recovery_rate = 0
+                    pending_rate = 0
+                    contacted_rate = 0
+                                rate_col1.metric(
+                    "Recovery Success Rate",
+                    f"{recovery_rate:.1f}%"
+                )
+
+                rate_col2.metric(
+                    "Pending Requests",
+                    f"{pending_rate:.1f}%"
+                )
+
+                rate_col3.metric(
+                    "Contacted Requests",
+                    f"{contacted_rate:.1f}%"
+                )
+
+                st.progress(
+                    int(round(recovery_rate))
+                )
+
+                st.divider()
+
+                # ----------------------------------
+                # STATUS CHART
+                # ----------------------------------
+
+                st.subheader("📊 Request Status Distribution")
+
+                status_chart_data = {
+                    "Status": [
                         "Pending",
                         "Contacted",
                         "Returned",
                         "Rejected"
+                    ],
+                    "Count": [
+                        pending_count,
+                        contacted_count,
+                        returned_count,
+                        rejected_count
                     ]
+                }
 
-                    selected_status = st.selectbox(
-                        "Update Status",
-                        status_options,
-                        index=(
-                            status_options.index(current_status)
-                            if current_status in status_options
-                            else 0
-                        ),
-                        key=f"status_{request_id}"
+                st.bar_chart(
+                    status_chart_data,
+                    x="Status",
+                    y="Count"
+                )
+
+                st.divider()
+
+                # ----------------------------------
+                # MOST REQUESTED ITEMS
+                # ----------------------------------
+
+                st.subheader("🏆 Most Requested Items")
+
+                item_counter = Counter()
+
+                for request in recovery_requests:
+
+                    item_name = request.get(
+                        "item_details", {}
+                    ).get("item_name", "Unknown item")
+
+                    item_counter[item_name] += 1
+
+                if item_counter:
+
+                    top_items = item_counter.most_common(10)
+
+                    item_chart_data = {
+                        "Item": [
+                            item[0] for item in top_items
+                        ],
+                        "Requests": [
+                            item[1] for item in top_items
+                        ]
+                    }
+
+                    st.bar_chart(
+                        item_chart_data,
+                        x="Item",
+                        y="Requests"
                     )
 
-                    if st.button(
-                        "Update Status",
-                        key=f"update_status_{request_id}"
+                else:
+
+                    st.info("No item request data available.")
+
+                st.divider()
+
+                # ----------------------------------
+                # MOST REQUESTED LOCATIONS
+                # ----------------------------------
+
+                st.subheader("📍 Most Requested Locations")
+
+                location_counter = Counter()
+
+                for request in recovery_requests:
+
+                    location = request.get(
+                        "item_details", {}
+                    ).get("location", "Not specified")
+
+                    location_counter[location] += 1
+
+                if location_counter:
+
+                    top_locations = location_counter.most_common(10)
+
+                    location_chart_data = {
+                        "Location": [
+                            loc[0] for loc in top_locations
+                        ],
+                        "Requests": [
+                            loc[1] for loc in top_locations
+                        ]
+                    }
+
+                    st.bar_chart(
+                        location_chart_data,
+                        x="Location",
+                        y="Requests"
+                    )
+
+                else:
+
+                    st.info("No location data available.")
+
+                st.divider()
+
+                # ----------------------------------
+                # DAILY REQUEST TRENDS
+                # ----------------------------------
+
+                st.subheader("📅 Daily Recovery Trends")
+
+                date_counts = {}
+
+                for request in recovery_requests:
+
+                    created_at = request.get("created_at")
+
+                    if created_at:
+
+                        try:
+
+                            request_date = (
+                                datetime.datetime.fromisoformat(
+                                    str(created_at).replace(
+                                        "Z",
+                                        "+00:00"
+                                    )
+                                ).date()
+                            )
+
+                            date_label = request_date.isoformat()
+
+                            date_counts[date_label] = (
+                                date_counts.get(date_label, 0) + 1
+                            )
+
+                        except (ValueError, TypeError):
+                            continue
+
+                if date_counts:
+
+                    sorted_dates = sorted(date_counts)
+
+                    date_chart_data = {
+                        "Date": sorted_dates,
+                        "Requests": [
+                            date_counts[date]
+                            for date in sorted_dates
+                        ]
+                    }
+
+                    st.line_chart(
+                        date_chart_data,
+                        x="Date",
+                        y="Requests"
+                    )
+
+                else:
+
+                    st.info("No daily request data available.")
+
+                st.divider()
+
+                # ----------------------------------
+                # MONTHLY REQUEST TRENDS
+                # ----------------------------------
+
+                st.subheader("📆 Monthly Recovery Trends")
+
+                month_counts = {}
+
+                for request in recovery_requests:
+
+                    created_at = request.get("created_at")
+
+                    if created_at:
+
+                        try:
+
+                            request_date = (
+                                datetime.datetime.fromisoformat(
+                                    str(created_at).replace(
+                                        "Z",
+                                        "+00:00"
+                                    )
+                                )
+                            )
+
+                            month_label = request_date.strftime("%Y-%m")
+
+                            month_counts[month_label] = (
+                                month_counts.get(month_label, 0) + 1
+                            )
+
+                        except (ValueError, TypeError):
+                            continue
+
+                if month_counts:
+
+                    sorted_months = sorted(month_counts)
+
+                    monthly_chart_data = {
+                        "Month": sorted_months,
+                        "Requests": [
+                            month_counts[month]
+                            for month in sorted_months
+                        ]
+                    }
+
+                    st.bar_chart(
+                        monthly_chart_data,
+                        x="Month",
+                        y="Requests"
+                    )
+
+                else:
+
+                    st.info("No monthly request data available.")
+
+                st.divider()
+
+                # ----------------------------------
+                # RECENT ACTIVITY
+                # ----------------------------------
+
+                st.subheader("🕒 Recent Recovery Activity")
+
+                if recovery_requests:
+
+                    for request in recovery_requests[:5]:
+
+                        item_name = request.get(
+                            "item_details", {}
+                        ).get("item_name", "Unknown item")
+
+                        st.write(
+                            f"📦 **{item_name}** — "
+                            f"{request.get('status', 'Pending')} — "
+                            f"{str(request.get('created_at', ''))[:10]}"
+                        )
+
+                else:
+
+                    st.info("No recent recovery activity.")
+
+                st.divider()
+
+                # ----------------------------------
+                # SEARCH AND FILTER REQUESTS
+                # ----------------------------------
+
+                st.subheader("🔎 Search Recovery Requests")
+
+                request_search = st.text_input(
+                    "Search by student name, item, email or location",
+                    key="admin_request_search"
+                )
+
+                status_filter = st.selectbox(
+                    "Filter by Status",
+                    [
+                        "All",
+                        "Pending",
+                        "Contacted",
+                        "Returned",
+                        "Rejected"
+                    ],
+                    key="admin_status_filter"
+                )
+
+                filtered_requests = []
+
+                for request in recovery_requests:
+                                        item_details = request.get("item_details", {})
+                    student_details = request.get("student_details", {})
+
+                    searchable_text = " ".join([
+                        str(request.get("requester_name", "")),
+                        str(request.get("requester_contact", "")),
+                        str(student_details.get("full_name", "")),
+                        str(student_details.get("email", "")),
+                        str(student_details.get("phone", "")),
+                        str(item_details.get("item_name", "")),
+                        str(item_details.get("location", ""))
+                    ]).lower()
+
+                    if (
+                        request_search.strip()
+                        and request_search.strip().lower()
+                        not in searchable_text
                     ):
+                        continue
 
-                        admin_supabase.table("recovery_requests").update({
-                            "status": selected_status
-                        }).eq(
-                            "id", request_id
-                        ).execute()
+                    if (
+                        status_filter != "All"
+                        and request.get("status") != status_filter
+                    ):
+                        continue
 
-                        st.success("Request status updated successfully!")
-                        st.rerun()
+                    filtered_requests.append(request)
 
-        else:
-
-            st.info("No recovery requests available.")
-
-        st.divider()
-
-        # ------------------------------------------
-        # CSV DOWNLOAD
-        # ------------------------------------------
-
-        st.subheader("📥 Download Recovery Requests")
-
-        if all_requests:
-
-            import pandas as pd
-
-            export_rows = []
-
-            for request in all_requests:
-
-                student_details = students_map.get(
-                    request.get("student_id"), {}
+                st.write(
+                    f"Showing {len(filtered_requests)} request(s)."
                 )
 
-                item_details = found_items_map.get(
-                    request.get("found_item_id"), {}
+                st.divider()
+
+                # ----------------------------------
+                # REQUEST DETAILS AND STATUS UPDATE
+                # ----------------------------------
+
+                st.subheader("📩 Recovery Request Details")
+
+                if filtered_requests:
+
+                    for request in filtered_requests:
+
+                        item_details = request.get(
+                            "item_details", {}
+                        )
+
+                        student_details = request.get(
+                            "student_details", {}
+                        )
+
+                        request_id = request.get("id")
+
+                        item_name = item_details.get(
+                            "item_name",
+                            "Unknown item"
+                        )
+
+                        student_name = student_details.get(
+                            "full_name",
+                            request.get("requester_name", "Unknown student")
+                        )
+
+                        with st.expander(
+                            f"📦 {item_name} — {student_name} "
+                            f"({request.get('status', 'Pending')})"
+                        ):
+
+                            st.markdown("### 👨‍🎓 Student Details")
+
+                            st.write(
+                                f"**Name:** {student_name}"
+                            )
+
+                            st.write(
+                                f"**Email:** "
+                                f"{student_details.get('email', 'Not available')}"
+                            )
+
+                            st.write(
+                                f"**Phone:** "
+                                f"{student_details.get('phone', 'Not available')}"
+                            )
+
+                            st.write(
+                                f"**Saved Contact:** "
+                                f"{request.get('requester_contact', 'Not available')}"
+                            )
+
+                            st.divider()
+
+                            st.markdown("### 📦 Found Item Details")
+
+                            st.write(
+                                f"**Item Name:** {item_name}"
+                            )
+
+                            st.write(
+                                f"**Description:** "
+                                f"{item_details.get('description', 'Not available')}"
+                            )
+
+                            st.write(
+                                f"**Location:** "
+                                f"{item_details.get('location', 'Not available')}"
+                            )
+
+                            item_image = item_details.get("image_path")
+
+                            if item_image:
+
+                                st.image(
+                                    item_image,
+                                    caption="Found Item Photo",
+                                    width=250
+                                )
+
+                            else:
+
+                                st.info(
+                                    "No photo available for this item."
+                                )
+
+                            st.divider()
+
+                            st.markdown("### 📝 Recovery Request")
+
+                            st.write(
+                                request.get(
+                                    "message",
+                                    "No message provided."
+                                )
+                            )
+
+                            st.write(
+                                f"**Submitted:** "
+                                f"{str(request.get('created_at', ''))[:19]}"
+                            )
+
+                            st.write(
+                                f"**Current Status:** "
+                                f"{request.get('status', 'Pending')}"
+                            )
+
+                            st.divider()
+
+                            status_options = [
+                                "Pending",
+                                "Contacted",
+                                "Returned",
+                                "Rejected"
+                            ]
+
+                            current_status = request.get(
+                                "status",
+                                "Pending"
+                            )
+
+                            if current_status not in status_options:
+                                current_status = "Pending"
+
+                            new_status = st.selectbox(
+                                "Update Request Status",
+                                status_options,
+                                index=status_options.index(current_status),
+                                key=f"admin_status_{request_id}"
+                            )
+
+                            if st.button(
+                                "💾 Save Status",
+                                key=f"save_status_{request_id}"
+                            ):
+
+                                try:
+
+                                    (
+                                        admin_supabase
+                                        .table("recovery_requests")
+                                        .update({
+                                            "status": new_status
+                                        })
+                                        .eq("id", request_id)
+                                        .execute()
+                                    )
+
+                                    st.success(
+                                        "Request status updated successfully!"
+                                    )
+
+                                    st.rerun()
+
+                                except Exception as status_error:
+
+                                    st.error(
+                                        "Unable to update request status."
+                                    )
+
+                                    st.code(str(status_error))
+
+                else:
+
+                    st.info(
+                        "No recovery requests match your search."
+                    )
+
+                st.divider()
+
+                # ----------------------------------
+                # DOWNLOAD CSV REPORT
+                # ----------------------------------
+
+                st.subheader("📥 Download Recovery Report")
+
+                csv_buffer = io.StringIO()
+
+                csv_writer = csv.writer(csv_buffer)
+
+                csv_writer.writerow([
+                    "Request ID",
+                    "Student Name",
+                    "Student Email",
+                    "Student Phone",
+                    "Item Name",
+                    "Item Description",
+                    "Item Location",
+                    "Requester Contact",
+                    "Message",
+                    "Status",
+                    "Created At"
+                ])
+
+                for request in recovery_requests:
+
+                    item_details = request.get(
+                        "item_details", {}
+                    )
+
+                    student_details = request.get(
+                        "student_details", {}
+                    )
+
+                    csv_writer.writerow([
+                        request.get("id"),
+                        student_details.get(
+                            "full_name",
+                            request.get("requester_name", "")
+                        ),
+                        student_details.get("email", ""),
+                        student_details.get("phone", ""),
+                        item_details.get("item_name", ""),
+                        item_details.get("description", ""),
+                        item_details.get("location", ""),
+                        request.get("requester_contact", ""),
+                        request.get("message", ""),
+                        request.get("status", ""),
+                        request.get("created_at", "")
+                    ])
+
+                st.download_button(
+                    label="⬇️ Download CSV Report",
+                    data=csv_buffer.getvalue(),
+                    file_name="FindItAI_Recovery_Report.csv",
+                    mime="text/csv"
                 )
 
-                export_rows.append({
-                    "Request ID": request.get("id"),
-                    "Student Name": student_details.get("full_name", ""),
-                    "Email": student_details.get("email", ""),
-                    "Phone": student_details.get("phone", ""),
-                    "Item Name": item_details.get("item_name", ""),
-                    "Location": item_details.get("location", ""),
-                    "Status": request.get("status", ""),
-                    "Created At": request.get("created_at", "")
-                })
+            except Exception as dashboard_error:
 
-            export_df = pd.DataFrame(export_rows)
+                st.error(
+                    "Unable to load the Admin Dashboard."
+                )
 
-            csv_data = export_df.to_csv(index=False).encode("utf-8")
-
-            st.download_button(
-                "Download CSV",
-                data=csv_data,
-                file_name="recovery_requests.csv",
-                mime="text/csv"
-            )
-
-        else:
-
-            st.info("No data available to download.")
+                st.code(str(dashboard_error))
 
         st.divider()
 
@@ -2596,10 +3270,14 @@ elif selected_page == "🔐 Admin":
         # ADMIN LOGOUT
         # ------------------------------------------
 
-        if st.button("🚪 Admin Logout", key="admin_logout_button"):
+        if st.button(
+            "🚪 Admin Logout",
+            key="admin_logout_button"
+        ):
 
             try:
-                admin_supabase.auth.sign_out()
+                if admin_supabase is not None:
+                    admin_supabase.auth.sign_out()
             except Exception:
                 pass
 
@@ -2612,6 +3290,7 @@ elif selected_page == "🔐 Admin":
             st.rerun()
 
 
+# --------------------------------------------------
 # --------------------------------------------------
 # 12. CLOSE DATABASE CONNECTION
 # --------------------------------------------------
