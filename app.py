@@ -321,126 +321,111 @@ if "selected_page" not in st.session_state:
 
 
 # --------------------------------------------------
-# PREMIUM MOBILE-FRIENDLY DESIGN
+# MOBILE-FRIENDLY DESIGN
 # --------------------------------------------------
 
-st.markdown("""
+st.html("""
 <style>
-
 .stApp {
-    background-color: #f5f8fc;
+    background: linear-gradient(135deg, #071426 0%, #0b1d35 55%, #102747 100%);
+    color: #f1f5f9;
+}
+
+.block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+    max-width: 1400px;
+}
+
+h1, h2, h3 {
+    color: #f8fafc !important;
+}
+
+p, label {
+    color: #dbeafe;
 }
 
 div.stButton > button {
-    min-height: 58px;
-    border-radius: 14px;
-    font-size: 16px;
+    min-height: 52px;
+    width: 100%;
+    border-radius: 12px;
+    font-size: 15px;
     font-weight: 700;
-    border: 1px solid #cbd5e1;
-    transition: all 0.2s ease;
+    border: 1px solid #45617f;
 }
 
 div.stButton > button:hover {
-    transform: translateY(-3px);
-    border-color: #247b70;
-    color: #247b70;
+    border-color: #69c5ad;
+    color: #69c5ad;
 }
 
 div[data-testid="stRadio"] > div[role="radiogroup"] {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    background: linear-gradient(145deg, #101f36, #142b48);
-    padding: 15px;
-    border-radius: 18px;
-    border: 1px solid #344966;
+    gap: 8px;
+    background: #101f36;
+    padding: 12px;
+    border-radius: 15px;
     width: 100%;
     box-sizing: border-box;
-}
-
-div[data-testid="stRadio"] input[type="radio"] {
-    display: none !important;
-}
-
-div[data-testid="stRadio"] label > div:first-child {
-    display: none !important;
 }
 
 div[data-testid="stRadio"] label {
-    display: flex !important;
-    justify-content: center;
-    align-items: center;
     background: #1b2d49;
     border: 1px solid #344966;
-    border-radius: 13px;
-    padding: 12px 7px;
-    min-height: 50px;
-    width: 100%;
-    box-sizing: border-box;
-    margin: 0 !important;
-    cursor: pointer;
+    border-radius: 10px;
+    padding: 10px 5px;
+    min-height: 45px;
+    justify-content: center;
+    align-items: center;
 }
 
 div[data-testid="stRadio"] label p {
     color: #f1f5f9 !important;
     font-size: 13px;
-    font-weight: 600;
     text-align: center;
-    margin: 0;
-}
-
-div[data-testid="stRadio"] label:hover {
-    background: #293e5e;
-    border-color: #5b789f;
 }
 
 div[data-testid="stRadio"] label:has(input:checked) {
-    background: linear-gradient(135deg, #397d72, #28695f);
-    border: 1px solid #69c5ad;
+    background: #28695f;
+    border-color: #69c5ad;
 }
 
-div[data-testid="stRadio"] label:has(input:checked) p {
-    color: #ffffff !important;
-    font-weight: 700;
+div[data-testid="stTextInput"] input,
+div[data-testid="stTextArea"] textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+div[data-testid="stImage"] img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
 }
 
 @media screen and (max-width: 768px) {
+    .block-container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
 
     div[data-testid="stRadio"] > div[role="radiogroup"] {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-        padding: 10px;
+        gap: 7px;
+        padding: 8px;
     }
 
     div[data-testid="stRadio"] label {
-        min-height: 46px;
-        padding: 9px 4px;
+        min-height: 44px;
+        padding: 8px 3px;
     }
 
     div[data-testid="stRadio"] label p {
         font-size: 11px;
     }
-
-    section.main > div {
-        padding-left: 12px;
-        padding-right: 12px;
-    }
-
-    div[data-testid="stImage"] img {
-        max-width: 100%;
-        height: auto;
-        object-fit: contain;
-    }
-
-    div[data-testid="stTextInput"] input,
-    div[data-testid="stTextArea"] textarea {
-        width: 100%;
-        box-sizing: border-box;
-    }
 }
-
 </style>
-""", unsafe_allow_html=True)
+""")
 
 
 # --------------------------------------------------
@@ -452,14 +437,12 @@ if not (
     or st.session_state.admin_logged_in
 ):
 
-    st.markdown(
-        "<div style='height:70px'></div>",
-        unsafe_allow_html=True
-    )
+    st.write("")
+    st.write("")
+    st.write("")
 
     st.markdown(
-        "<h1 style='text-align:center;color:#247b70;'>"
-        "🔎 FindIt AI</h1>",
+        "<h1 style='text-align:center;'>🔎 FindIt AI</h1>",
         unsafe_allow_html=True
     )
 
@@ -471,7 +454,7 @@ if not (
     )
 
     st.markdown(
-        "<p style='text-align:center;color:#64748b;'>"
+        "<p style='text-align:center;'>"
         "Lost something on campus?<br>"
         "Find your belongings using Artificial Intelligence.<br>"
         "Report found items and reconnect them with their owners."
@@ -482,43 +465,37 @@ if not (
     st.write("")
     st.write("")
 
-    empty_left, center_col, empty_right = st.columns([1, 2, 1])
+    left, center, right = st.columns([1, 2, 1])
 
-    with center_col:
+    with center:
 
-        student_col, admin_col = st.columns(2)
+        if st.button(
+            "👤 Student Login",
+            use_container_width=True,
+            key="welcome_student_button"
+        ):
+            st.session_state.selected_page = "👤 Student Login"
+            st.rerun()
 
-        with student_col:
+        st.write("")
 
-            if st.button(
-                "👤 Student Login",
-                use_container_width=True,
-                key="welcome_student_button"
-            ):
-                st.session_state.selected_page = "👤 Student Login"
-                st.rerun()
-
-        with admin_col:
-
-            if st.button(
-                "🔐 Admin Login",
-                use_container_width=True,
-                key="welcome_admin_button"
-            ):
-                st.session_state.selected_page = "🔐 Admin"
-                st.rerun()
+        if st.button(
+            "🔐 Admin Login",
+            use_container_width=True,
+            key="welcome_admin_button"
+        ):
+            st.session_state.selected_page = "🔐 Admin"
+            st.rerun()
 
     st.write("")
-    st.markdown(
-        "<p style='text-align:center;color:#64748b;"
-        "font-size:13px;'>"
+
+    st.caption(
         "AI-powered campus lost-and-found platform"
-        "</p>",
-        unsafe_allow_html=True
     )
 
     selected_page = st.session_state.selected_page
 
+    # Keep the welcome screen visible until a button is selected.
     if selected_page is None:
         st.stop()
 
@@ -561,6 +538,7 @@ else:
             "🔐 Admin"
         ]
 
+    # Reset navigation when the user's role changes.
     if (
         "previous_navigation_options" not in st.session_state
         or st.session_state.previous_navigation_options
@@ -660,7 +638,6 @@ if selected_page == "🏠 Home":
     col1, col2 = st.columns(2)
 
     with col1:
-
         st.markdown("### 📦 Report Found Items")
         st.write("Report found items by adding their photos and details.")
 
@@ -671,7 +648,6 @@ if selected_page == "🏠 Home":
         st.write("View items reported by students.")
 
     with col2:
-
         st.markdown("### 🤖 AI Image Search")
         st.write("Find visually similar items using AI technology.")
 
@@ -708,14 +684,14 @@ if selected_page == "🏠 Home":
     st.caption("An AI-powered campus lost-and-found system.")
 
 
-# --------------------------------------------------
-# OTHER EXISTING PAGE IMPLEMENTATIONS
-# --------------------------------------------------
-
-# Keep your original Report Item, Search Items,
-# AI Image Search, All Found Items, Recovery Requests,
-# Share, Student Login and Admin Login page code here.
-
+# IMPORTANT:
+# Keep the existing elif branches below this section unchanged.
+# Section 6: Report Item
+# Section 7: AI Image Search
+# Section 8: Search Items
+# Section 9: All Found Items
+# Section 10: Recovery Requests
+# Section 11: Student Login and Admin Dashboard
 
 # --------------------------------------------------
 # 6. REPORT A FOUND ITEM
