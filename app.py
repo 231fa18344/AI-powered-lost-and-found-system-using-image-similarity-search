@@ -309,72 +309,134 @@ def find_similar_items(query_image, image_items):
 # 5. TOP NAVIGATION AND WEBSITE PAGES
 # --------------------------------------------------
 
-# PREMIUM TOP NAVIGATION BAR
+# LOGIN STATE
+
+if "student_logged_in" not in st.session_state:
+    st.session_state.student_logged_in = False
+
+if "admin_logged_in" not in st.session_state:
+    st.session_state.admin_logged_in = False
+
+if "selected_page" not in st.session_state:
+    st.session_state.selected_page = None
+
+
+# --------------------------------------------------
+# PREMIUM MOBILE-FRIENDLY DESIGN
+# --------------------------------------------------
 
 st.markdown("""
 <style>
 
-/* Navigation bar background */
-div[data-testid="stRadio"] > div[role="radiogroup"] {
-    background: #17232f;
-    padding: 10px;
+.stApp {
+    background-color: #f5f8fc;
+}
+
+div.stButton > button {
+    min-height: 58px;
     border-radius: 14px;
-    border: 1px solid #35434d;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px;
-}
-
-/* Hide radio circles */
-div[data-testid="stRadio"] label > div:first-child {
-    display: none;
-}
-
-/* Navigation options */
-div[data-testid="stRadio"] label {
-    background: transparent;
-    color: #d8e1e5 !important;
-    padding: 10px 15px;
-    border-radius: 9px;
-    border: 1px solid transparent;
+    font-size: 16px;
+    font-weight: 700;
+    border: 1px solid #cbd5e1;
     transition: all 0.2s ease;
+}
+
+div.stButton > button:hover {
+    transform: translateY(-3px);
+    border-color: #247b70;
+    color: #247b70;
+}
+
+div[data-testid="stRadio"] > div[role="radiogroup"] {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    background: linear-gradient(145deg, #101f36, #142b48);
+    padding: 15px;
+    border-radius: 18px;
+    border: 1px solid #344966;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+div[data-testid="stRadio"] input[type="radio"] {
+    display: none !important;
+}
+
+div[data-testid="stRadio"] label > div:first-child {
+    display: none !important;
+}
+
+div[data-testid="stRadio"] label {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    background: #1b2d49;
+    border: 1px solid #344966;
+    border-radius: 13px;
+    padding: 12px 7px;
+    min-height: 50px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 !important;
     cursor: pointer;
 }
 
-/* Hover effect */
-div[data-testid="stRadio"] label:hover {
-    background: #293b45;
-    color: #ffffff !important;
-}
-
-/* Active navigation option */
-div[data-testid="stRadio"] label:has(input:checked) {
-    background: #397d72;
-    color: #ffffff !important;
-    border: 1px solid #69a99b;
-    font-weight: 600;
-}
-
-/* Remove extra radio spacing */
 div[data-testid="stRadio"] label p {
-    font-size: 14px;
+    color: #f1f5f9 !important;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
     margin: 0;
 }
 
-/* Mobile navigation */
-@media (max-width: 768px) {
+div[data-testid="stRadio"] label:hover {
+    background: #293e5e;
+    border-color: #5b789f;
+}
+
+div[data-testid="stRadio"] label:has(input:checked) {
+    background: linear-gradient(135deg, #397d72, #28695f);
+    border: 1px solid #69c5ad;
+}
+
+div[data-testid="stRadio"] label:has(input:checked) p {
+    color: #ffffff !important;
+    font-weight: 700;
+}
+
+@media screen and (max-width: 768px) {
+
     div[data-testid="stRadio"] > div[role="radiogroup"] {
-        gap: 5px;
-        padding: 7px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 10px;
     }
 
     div[data-testid="stRadio"] label {
-        padding: 9px 7px;
+        min-height: 46px;
+        padding: 9px 4px;
     }
 
     div[data-testid="stRadio"] label p {
-        font-size: 12px;
+        font-size: 11px;
+    }
+
+    section.main > div {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    div[data-testid="stImage"] img {
+        max-width: 100%;
+        height: auto;
+        object-fit: contain;
+    }
+
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stTextArea"] textarea {
+        width: 100%;
+        box-sizing: border-box;
     }
 }
 
@@ -382,277 +444,145 @@ div[data-testid="stRadio"] label p {
 """, unsafe_allow_html=True)
 
 
-selected_page = st.radio(
-    "Navigation",
-    [
-        "🏠 Home",
-        "📦 Report Item",
-        "🔍 Search Items",
-        "🤖 AI Image Search",
-        "📋 All Found Items",
-        "📩 Recovery Requests",
-        "📤 Share",
-        "🔐 Admin"
-    ],
-    horizontal=True,
-    label_visibility="collapsed",
-    key="main_navigation"
-)
+# --------------------------------------------------
+# FIRST SCREEN - STUDENT / ADMIN LOGIN
+# --------------------------------------------------
 
-st.divider()
+if not (
+    st.session_state.student_logged_in
+    or st.session_state.admin_logged_in
+):
+
+    st.markdown(
+        "<div style='height:70px'></div>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        "<h1 style='text-align:center;color:#247b70;'>"
+        "🔎 FindIt AI</h1>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        "<h3 style='text-align:center;'>"
+        "Welcome to Smart Campus Lost &amp; Found"
+        "</h3>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        "<p style='text-align:center;color:#64748b;'>"
+        "Lost something on campus?<br>"
+        "Find your belongings using Artificial Intelligence.<br>"
+        "Report found items and reconnect them with their owners."
+        "</p>",
+        unsafe_allow_html=True
+    )
+
+    st.write("")
+    st.write("")
+
+    empty_left, center_col, empty_right = st.columns([1, 2, 1])
+
+    with center_col:
+
+        student_col, admin_col = st.columns(2)
+
+        with student_col:
+
+            if st.button(
+                "👤 Student Login",
+                use_container_width=True,
+                key="welcome_student_button"
+            ):
+                st.session_state.selected_page = "👤 Student Login"
+                st.rerun()
+
+        with admin_col:
+
+            if st.button(
+                "🔐 Admin Login",
+                use_container_width=True,
+                key="welcome_admin_button"
+            ):
+                st.session_state.selected_page = "🔐 Admin"
+                st.rerun()
+
+    st.write("")
+
+    st.markdown(
+        "<p style='text-align:center;color:#64748b;"
+        "font-size:13px;'>"
+        "AI-powered campus lost-and-found platform"
+        "</p>",
+        unsafe_allow_html=True
+    )
+
+    selected_page = st.session_state.selected_page
+
+    if selected_page is None:
+        st.stop()
 
 
 # --------------------------------------------------
-# HOME PAGE
+# AFTER LOGIN - MAIN NAVIGATION
 # --------------------------------------------------
 
-if selected_page == "🏠 Home":
+else:
 
     st.title("🔎 FindIt AI")
 
-    st.subheader(
-        "Your Smart Campus Lost-and-Found Assistant"
-    )
+    if st.session_state.student_logged_in:
 
-    st.write(
-        "Lost something on campus? Don't worry! "
-        "FindIt AI helps you find your lost belongings "
-        "quickly and easily using Artificial Intelligence."
+        st.caption("👤 Student Account")
+
+        navigation_options = [
+            "🏠 Home",
+            "📦 Report Item",
+            "🔍 Search Items",
+            "🤖 AI Image Search",
+            "📋 All Found Items",
+            "📩 Recovery Requests",
+            "📤 Share",
+            "👤 Student Login"
+        ]
+
+    elif st.session_state.admin_logged_in:
+
+        st.caption("🔐 Administrator Account")
+
+        navigation_options = [
+            "🏠 Home",
+            "📦 Report Item",
+            "🔍 Search Items",
+            "🤖 AI Image Search",
+            "📋 All Found Items",
+            "📩 Recovery Requests",
+            "📤 Share",
+            "🔐 Admin"
+        ]
+
+    if (
+        "previous_navigation_options" not in st.session_state
+        or st.session_state.previous_navigation_options
+        != navigation_options
+    ):
+
+        st.session_state.previous_navigation_options = navigation_options
+
+        if "main_navigation" in st.session_state:
+            del st.session_state["main_navigation"]
+
+    selected_page = st.radio(
+        "Navigation",
+        navigation_options,
+        horizontal=True,
+        label_visibility="collapsed",
+        key="main_navigation"
     )
 
     st.divider()
-
-    # ABOUT FINDIT AI
-
-    st.header("👋 Welcome to FindIt AI")
-
-    st.write(
-        "FindIt AI is an intelligent lost-and-found "
-        "platform designed especially for students."
-    )
-
-    st.write(
-        "Students can report items they have found "
-        "and search for belongings they have lost. "
-        "The system allows users to search using item "
-        "names, descriptions, or uploaded images."
-    )
-
-    st.write(
-        "Using AI-powered image similarity technology, "
-        "FindIt AI helps identify visually similar items "
-        "even when their descriptions are different."
-    )
-
-    st.info(
-        "🎯 Our Mission: To make finding lost belongings "
-        "on campus simple, smart, and convenient."
-    )
-
-    st.divider()
-
-    # HOW IT WORKS
-
-    st.header("⚡ How Does FindIt AI Work?")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown("### 1️⃣ Report")
-        st.write(
-            "Found an item? Upload its photo and provide "
-            "its name, description, and location."
-        )
-
-    with col2:
-        st.markdown("### 2️⃣ Search")
-        st.write(
-            "Lost an item? Search using its name, "
-            "description, or upload a photo to find "
-            "similar items."
-        )
-
-    with col3:
-        st.markdown("### 3️⃣ Recover")
-        st.write(
-            "Identify a possible match and submit "
-            "a recovery request to help get your "
-            "belonging back."
-        )
-
-    st.divider()
-
-    # MAIN FEATURES
-
-    st.header("✨ Explore Our Features")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("### 📦 Report Found Items")
-        st.write(
-            "Report items found on campus by adding "
-            "their photos and details."
-        )
-
-        st.markdown("### 🔍 Text Search")
-        st.write(
-            "Search for lost belongings using item "
-            "names and descriptions."
-        )
-
-        st.markdown("### 📋 All Found Items")
-        st.write(
-            "View the list of items reported by students."
-        )
-
-    with col2:
-        st.markdown("### 🤖 AI Image Search")
-        st.write(
-            "Upload an image and find visually similar "
-            "items using AI technology."
-        )
-
-        st.markdown("### 📩 Recovery Requests")
-        st.write(
-            "Submit a request when you identify an item "
-            "that may belong to you."
-        )
-
-        st.markdown("### 🔐 Admin Dashboard")
-        st.write(
-            "Authorized administrators can review "
-            "recovery requests and update their status."
-        )
-
-    st.divider()
-
-    # TYPES OF ITEMS
-
-    st.header("🎒 What Can You Find?")
-
-    st.write(
-        "You can report and search for different "
-        "personal belongings, including:"
-    )
-
-    item_col1, item_col2, item_col3 = st.columns(3)
-
-    with item_col1:
-        st.write("🪪 ID Cards")
-        st.write("👛 Wallets")
-
-    with item_col2:
-        st.write("🔑 Keys")
-        st.write("🎒 Bags")
-
-    with item_col3:
-        st.write("🎧 Earphones")
-        st.write("📱 Other belongings")
-
-    st.divider()
-
-    # FOOTER
-
-    st.success(
-        "💙 FindIt AI — Helping Lost Items Find Their Way Home!"
-    )
-
-    st.caption(
-        "An AI-powered campus lost-and-found system."
-    )
-
-
-# --------------------------------------------------
-# SHARE PAGE - QR CODE
-# --------------------------------------------------
-
-elif selected_page == "📤 Share":
-
-    st.title("🔎 FindIt AI")
-
-    st.header("📱 Share FindIt AI")
-
-    st.write(
-        "Scan this QR code using your mobile phone "
-        "to open the FindIt AI website."
-    )
-
-    website_url = (
-        "https://ai-powered-lost-and-found-system-using-image-similarity-search.streamlit.app/"
-    )
-
-    try:
-
-        # Generate QR code
-
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_H,
-            box_size=10,
-            border=4
-        )
-
-        qr.add_data(website_url)
-        qr.make(fit=True)
-
-        qr_image = qr.make_image(
-            fill_color="black",
-            back_color="white"
-        )
-
-        # Convert QR image into bytes
-
-        qr_buffer = BytesIO()
-
-        qr_image.save(
-            qr_buffer,
-            format="PNG"
-        )
-
-        qr_bytes = qr_buffer.getvalue()
-
-        # Display QR code in center
-
-        left_col, center_col, right_col = st.columns(
-            [1, 2, 1]
-        )
-
-        with center_col:
-
-            st.image(
-                qr_bytes,
-                caption="📱 Scan to open FindIt AI",
-                use_container_width=True
-            )
-
-            st.download_button(
-                label="⬇️ Download QR Code",
-                data=qr_bytes,
-                file_name="FindItAI_QR_Code.png",
-                mime="image/png",
-                use_container_width=True
-            )
-
-            st.link_button(
-                "🌐 Open FindIt AI Website",
-                website_url,
-                use_container_width=True
-            )
-
-        st.success(
-            "QR code generated successfully!"
-        )
-
-    except Exception as qr_error:
-
-        st.error(
-            "Unable to generate QR code."
-        )
-
-        st.code(str(qr_error))
-
-
 # --------------------------------------------------
 # 6. REPORT A FOUND ITEM
 # --------------------------------------------------
