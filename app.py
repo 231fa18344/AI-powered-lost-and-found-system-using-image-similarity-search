@@ -2144,7 +2144,7 @@ elif selected_page == "👤 Student Login":
     else:
 
         st.success("You are logged in successfully!")
-                student_supabase = None
+        student_supabase = None
 
         try:
 
