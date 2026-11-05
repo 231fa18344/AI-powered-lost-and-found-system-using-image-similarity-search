@@ -2690,7 +2690,7 @@ elif selected_page == "🔐 Admin":
                     recovery_rate = 0
                     pending_rate = 0
                     contacted_rate = 0
-                                rate_col1.metric(
+                    rate_col1.metric(
                     "Recovery Success Rate",
                     f"{recovery_rate:.1f}%"
                 )
